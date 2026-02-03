@@ -1,0 +1,39 @@
+services:
+  nginx:
+    build:
+      context: ./docker/nginx
+      dockerfile: Dockerfile
+    container_name: guardrail_nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - ./src:/var/www/html
+    depends_on:
+      - php
+    networks:
+      - guardrail_network
+    restart: unless-stopped
+
+  php:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+    container_name: guardrail_php
+    volumes:
+      - ./src:/var/www/html
+      - sqlite_data:/var/www/html/storage
+    environment:
+      - DB_PATH=/var/www/html/storage/database.sqlite
+      - APP_ENV=${APP_ENV:-development}
+      - APP_DEBUG=${APP_DEBUG:-true}
+    networks:
+      - guardrail_network
+    restart: unless-stopped
+
+networks:
+  guardrail_network:
+    driver: bridge
+
+volumes:
+  sqlite_data:
+    driver: local

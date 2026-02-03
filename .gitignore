@@ -1,0 +1,36 @@
+# Environment files
+.env
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker volumes
+mysql_data/
+
+# Logs
+*.log
+logs/
+
+# Composer
+vendor/
+composer.lock
+
+# Node modules (if we add any frontend build tools later)
+node_modules/
+package-lock.json
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# PHPUnit
+.phpunit.result.cache

@@ -1,0 +1,292 @@
+<?php
+require_once __DIR__ . '/../utils/helpers.php';
+$config = require __DIR__ . '/../config/config.php';
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Risk-Based Guardrail Calculator | Kitce's Monte Carlo Method</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🎯 Risk-Based Guardrail Calculator</h1>
+            <p class="subtitle">Monte Carlo Probability of Success Analysis</p>
+            <p class="description">
+                Based on <a href="https://www.kitces.com/blog/risk-based-monte-carlo-probability-of-success-guardrails-retirement-distribution-hatchet/" target="_blank">Kitce's Risk-Based Guardrails</a> methodology
+            </p>
+        </header>
+
+        <div class="main-content">
+            <!-- Calculator Form -->
+            <div class="card calculator-card">
+                <h2>📊 Input Parameters</h2>
+                
+                <form id="calculatorForm">
+                    <!-- Personal Information -->
+                    <fieldset>
+                        <legend>Personal Information</legend>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="spouse1Age">Your Age (or Spouse 1)</label>
+                                <input type="number" id="spouse1Age" name="spouse1_age" required min="18" max="120" value="67">
+                            </div>
+                            <div class="form-group">
+                                <label for="spouse2Age">Spouse 2 Age (optional)</label>
+                                <input type="number" id="spouse2Age" name="spouse2_age" min="18" max="120" placeholder="Leave blank if single">
+                                <small>Leave empty for single-person planning</small>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="retirementAge">Retirement Age</label>
+                                <input type="number" id="retirementAge" name="retirement_age" required min="18" max="120" value="65">
+                                <small>Use younger spouse's age if couple</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="planningHorizon">Planning Horizon (years)</label>
+                                <input type="number" id="planningHorizon" name="planning_horizon_years" required min="1" max="60" value="30">
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <!-- Portfolio Information -->
+                    <fieldset>
+                        <legend>Portfolio Information</legend>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="initialPortfolio">Initial Portfolio Value at Retirement</label>
+                                <input type="number" id="initialPortfolio" name="initial_portfolio_value" required min="0" step="1" value="1000000">
+                            </div>
+                            <div class="form-group">
+                                <label for="currentPortfolio">Current Portfolio Value</label>
+                                <input type="number" id="currentPortfolio" name="current_portfolio_value" required min="0" step="1" value="1050000">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="currentSpending">Current Annual Spending</label>
+                                <input type="number" id="currentSpending" name="current_spending" required min="0" step="1" value="45000">
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <!-- Asset Allocation -->
+                    <fieldset>
+                        <legend>Asset Allocation</legend>
+                        <div class="allocation-display">
+                            <div class="allocation-bar" id="allocationBar"></div>
+                            <p class="allocation-total">Total: <span id="allocationTotal">100.0</span>%</p>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="stockAllocation">Stocks (%)</label>
+                                <input type="number" id="stockAllocation" name="stock_allocation" required min="0" max="100" step="0.1" value="60">
+                            </div>
+                            <div class="form-group">
+                                <label for="bondAllocation">Bonds (%)</label>
+                                <input type="number" id="bondAllocation" name="bond_allocation" required min="0" max="100" step="0.1" value="35">
+                            </div>
+                            <div class="form-group">
+                                <label for="cashAllocation">Cash (%)</label>
+                                <input type="number" id="cashAllocation" name="cash_allocation" required min="0" max="100" step="0.1" value="5">
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <!-- Fees and Inflation -->
+                    <fieldset>
+                        <legend>Fees & Inflation</legend>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="annualFee">Annual Fee (%)</label>
+                                <input type="number" id="annualFee" name="annual_fee_percentage" min="0" max="5" step="0.01" value="0.04">
+                                <small>Enter as percentage (e.g., 0.75 for 0.75%, not 75)</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="inflationRate">Assumed Inflation Rate (%)</label>
+                                <input type="number" id="inflationRate" name="inflation_rate" min="-10" max="20" step="0.1" value="2.5">
+                                <small>Enter as percentage (e.g., 2.5 for 2.5%)</small>
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <!-- Income Sources -->
+                    <fieldset>
+                        <legend>Income Sources (Social Security, Pensions, etc.)</legend>
+                        <div id="incomeSourcesContainer"></div>
+                        <button type="button" class="btn btn-secondary" id="addIncomeSource">+ Add Income Source</button>
+                    </fieldset>
+
+                    <!-- Spending Profile -->
+                    <fieldset>
+                        <legend>Spending Profile</legend>
+                        <div class="form-group">
+                            <label for="spendingProfile">Spending Pattern</label>
+                            <select id="spendingProfile" name="spending_profile_type">
+                                <option value="smile" selected>Retirement Spending Smile (Recommended)</option>
+                                <option value="flat">Flat (Constant Real Spending)</option>
+                            </select>
+                            <small>Spending smile reflects research showing spending naturally declines in retirement</small>
+                        </div>
+                    </fieldset>
+
+                    <!-- Guardrail Settings -->
+                    <fieldset>
+                        <legend>Guardrail Settings</legend>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="lowerGuardrail">Lower Guardrail (% PoS)</label>
+                                <input type="number" id="lowerGuardrail" name="lower_guardrail" min="50" max="95" step="0.1" value="80">
+                            </div>
+                            <div class="form-group">
+                                <label for="upperGuardrail">Upper Guardrail (% PoS)</label>
+                                <input type="number" id="upperGuardrail" name="upper_guardrail" min="55" max="99" step="0.1" value="95">
+                            </div>
+                            <div class="form-group">
+                                <label for="spendingAdjustment">Spending Adjustment (%)</label>
+                                <input type="number" id="spendingAdjustment" name="spending_adjustment_percentage" min="1" max="50" step="1" value="10">
+                            </div>
+                        </div>
+                        <small>When guardrails are breached, spending will be adjusted by this percentage</small>
+                    </fieldset>
+
+                    <!-- Submit Button -->
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary" id="calculateBtn">
+                            🔬 Run Monte Carlo Simulation (10,000 iterations)
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="exportJsonBtn">
+                            📋 Export Inputs as JSON
+                        </button>
+                    </div>
+                </form>
+
+                <div id="loadingIndicator" class="loading-indicator" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Running Monte Carlo simulation...</p>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div id="resultsSection" class="card results-card" style="display: none;">
+                <h2>📈 Analysis Results</h2>
+                
+                <!-- Main Results -->
+                <div class="results-summary">
+                    <div class="result-primary">
+                        <div class="pos-gauge">
+                            <div class="pos-value" id="posValue">--</div>
+                            <div class="pos-label">Probability of Success</div>
+                        </div>
+                        <div class="guardrail-indicator" id="guardrailIndicator">
+                            <div class="status-badge" id="statusBadge">--</div>
+                        </div>
+                    </div>
+                    
+                    <div class="result-grid">
+                        <div class="result-item">
+                            <div class="result-label">Current Spending</div>
+                            <div class="result-value" id="currentSpendingResult">--</div>
+                        </div>
+                        <div class="result-item">
+                            <div class="result-label">Recommended Spending</div>
+                            <div class="result-value" id="recommendedSpendingResult">--</div>
+                        </div>
+                        <div class="result-item">
+                            <div class="result-label">Adjustment Needed</div>
+                            <div class="result-value" id="adjustmentResult">--</div>
+                        </div>
+                        <div class="result-item">
+                            <div class="result-label">Current Withdrawal Rate</div>
+                            <div class="result-value" id="withdrawalRateResult">--</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Interpretation -->
+                <div class="interpretation-box" id="interpretationBox">
+                    <h3>💡 Interpretation</h3>
+                    <p id="interpretationText">--</p>
+                </div>
+
+                <!-- Charts -->
+                <div class="charts-container">
+                    <div class="chart-box">
+                        <h3>Portfolio Projection (Monte Carlo)</h3>
+                        <canvas id="projectionChart"></canvas>
+                    </div>
+                    <div class="chart-box">
+                        <h3>Guardrail Status</h3>
+                        <canvas id="guardrailChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Detailed Statistics -->
+                <div class="stats-details">
+                    <h3>📊 Detailed Statistics</h3>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <span class="stat-label">Monte Carlo Iterations:</span>
+                            <span class="stat-value" id="statIterations">--</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Successful Scenarios:</span>
+                            <span class="stat-value" id="statSuccessful">--</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Failed Scenarios:</span>
+                            <span class="stat-value" id="statFailed">--</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Median Final Portfolio:</span>
+                            <span class="stat-value" id="statMedian">--</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">10th Percentile:</span>
+                            <span class="stat-value" id="statP10">--</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">90th Percentile:</span>
+                            <span class="stat-value" id="statP90">--</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Expected Return:</span>
+                            <span class="stat-value" id="statExpectedReturn">--</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Portfolio Volatility:</span>
+                            <span class="stat-value" id="statVolatility">--</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Calculation Time:</span>
+                            <span class="stat-value" id="statDuration">--</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>
+                <strong>Disclaimer:</strong> This calculator is for educational and planning purposes only. 
+                It does not constitute financial advice. Monte Carlo simulations are based on historical 
+                return assumptions and may not predict actual future performance. 
+                Consult with a qualified financial advisor before making investment decisions.
+            </p>
+            <p class="footer-links">
+                <a href="/history.php">View Calculation History</a> | 
+                <a href="https://www.kitces.com/blog/risk-based-monte-carlo-probability-of-success-guardrails-retirement-distribution-hatchet/" target="_blank">Learn More About Risk-Based Guardrails</a>
+            </p>
+        </footer>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script src="/js/calculator-form.js"></script>
+    <script src="/js/charts.js"></script>
+</body>
+</html>
