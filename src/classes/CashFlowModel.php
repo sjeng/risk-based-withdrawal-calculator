@@ -68,8 +68,9 @@ class CashFlowModel {
             
             // Apply inflation if applicable
             if ($source['inflation_adjusted']) {
-                $yearsSinceStart = max(0, $currentAge - $source['start_age']);
-                $amount *= pow(1 + $this->inflationRate, $yearsSinceStart);
+                // Adjust for inflation from the start of the simulation (Today's Dollars)
+                // rather than from the start of the income stream
+                $amount *= pow(1 + $this->inflationRate, $yearNumber);
             }
             
             $totalIncome += $amount;
