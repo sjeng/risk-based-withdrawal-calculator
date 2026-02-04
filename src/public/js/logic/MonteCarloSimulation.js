@@ -134,8 +134,11 @@ export class MonteCarloSimulation {
             // Get income for this year
             const income = this.cashFlowModel.getIncomeForYear(age, year);
 
+            // Get additional expenses for this year
+            const extraExpenses = this.cashFlowModel.getExpensesForYear(age, year);
+
             // Calculate net withdrawal
-            const netWithdrawal = spending - income;
+            const netWithdrawal = spending + extraExpenses - income;
 
             // Apply withdrawal (or contribution if negative)
             portfolioValue -= netWithdrawal;
@@ -153,6 +156,7 @@ export class MonteCarloSimulation {
                 portfolio_value: portfolioValue,
                 annual_return: annualReturn,
                 spending: spending,
+                extra_expenses: extraExpenses,
                 income: income,
                 net_withdrawal: netWithdrawal,
             });

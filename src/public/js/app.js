@@ -80,6 +80,7 @@ function updateAllocationBar() {
 
 // Income source counter
 let incomeSourceCounter = 0;
+let expenseItemCounter = 0;
 
 // Add income source
 function addIncomeSource(savedData = null) {
@@ -144,11 +145,90 @@ function addIncomeSource(savedData = null) {
     container.appendChild(sourceDiv);
 }
 
+function addExpenseItem(savedData = null) {
+    expenseItemCounter++;
+    const container = document.getElementById('expenseItemsContainer');
+
+    const itemDiv = document.createElement('div');
+    itemDiv.className = 'expense-item';
+    itemDiv.dataset.expenseId = expenseItemCounter;
+
+    const name = savedData?.name || '';
+    const amount = savedData?.annual_amount || '';
+    const startAge = savedData?.start_age || '';
+    const durationYears = savedData?.duration_years || '';
+    const type = savedData?.type || 'one_time';
+    const inflationAdjusted = savedData?.inflation_adjusted == null ? true : Boolean(savedData.inflation_adjusted);
+
+    itemDiv.innerHTML = `
+        <div class="expense-item-header">
+            <strong>Future Expense #${expenseItemCounter}</strong>
+            <button type="button" class="remove-expense" onclick="removeExpenseItem(${expenseItemCounter})">Remove</button>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Expense Name</label>
+                <input type="text" name="future_expenses[${expenseItemCounter}][name]" placeholder="e.g., Roof replacement" value="${name}" required>
+            </div>
+            <div class="form-group">
+                <label>Annual Amount</label>
+                <input type="number" name="future_expenses[${expenseItemCounter}][annual_amount]" min="0" step="1" placeholder="15000" value="${amount}" required>
+            </div>
+            <div class="form-group">
+                <label>Start Age</label>
+                <input type="number" name="future_expenses[${expenseItemCounter}][start_age]" min="0" max="120" placeholder="75" value="${startAge}" required>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Expense Type</label>
+                <select name="future_expenses[${expenseItemCounter}][type]" class="expense-type">
+                    <option value="one_time" ${type === 'one_time' ? 'selected' : ''}>One-time</option>
+                    <option value="duration" ${type === 'duration' ? 'selected' : ''}>Duration (years)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Duration (years)</label>
+                <input type="number" id="expenseDuration-${expenseItemCounter}" name="future_expenses[${expenseItemCounter}][duration_years]" min="1" max="60" placeholder="5" value="${durationYears}" class="expense-duration">
+            </div>
+            <div class="form-group">
+                <label>Inflation Adjusted?</label>
+                <select name="future_expenses[${expenseItemCounter}][inflation_adjusted]">
+                    <option value="true" ${inflationAdjusted ? 'selected' : ''}>Yes</option>
+                    <option value="false" ${!inflationAdjusted ? 'selected' : ''}>No</option>
+                </select>
+            </div>
+        </div>
+    `;
+
+    container.appendChild(itemDiv);
+
+    const typeSelect = itemDiv.querySelector('.expense-type');
+    const durationInput = itemDiv.querySelector('.expense-duration');
+    const toggleDuration = () => {
+        const isDuration = typeSelect.value === 'duration';
+        durationInput.disabled = !isDuration;
+        if (!isDuration) {
+            durationInput.value = '';
+        }
+    };
+
+    typeSelect.addEventListener('change', toggleDuration);
+    toggleDuration();
+}
+
 // Remove income source
 function removeIncomeSource(id) {
     const source = document.querySelector(`[data-source-id="${id}"]`);
     if (source) {
         source.remove();
+    }
+}
+
+function removeExpenseItem(id) {
+    const item = document.querySelector(`[data-expense-id="${id}"]`);
+    if (item) {
+        item.remove();
     }
 }
 
@@ -205,11 +285,14 @@ function displayResults(results) {
     document.getElementById('statP90').textContent = formatCurrency(mc.percentiles.p90);
     document.getElementById('statExpectedReturn').textContent = formatPercentage(results.portfolio_metrics.expected_return);
     document.getElementById('statVolatility').textContent = formatPercentage(results.portfolio_metrics.portfolio_volatility);
+    document.getElementById('statYear0Income').textContent = formatCurrency(results.income_impact.year0_income);
+    document.getElementById('statYear0Expenses').textContent = formatCurrency(results.income_impact.year0_expenses);
+    document.getElementById('statYear0NetWithdrawal').textContent = formatCurrency(results.income_impact.year0_net_withdrawal);
     document.getElementById('statDuration').textContent = mc.duration_ms + ' ms (MC simulation)';
     
     // Create charts
     createProjectionChart(results);
-    createGuardrailChart(results);
+    createCashflowChart(results);
     
     // Scroll to results with a small top offset so PoS stays visible
     const resultsSection = document.getElementById('resultsSection');
@@ -231,6 +314,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Add income source button
     document.getElementById('addIncomeSource').addEventListener('click', () => addIncomeSource());
 
+    const addExpenseButton = document.getElementById('addExpenseItem');
+    if (addExpenseButton) {
+        addExpenseButton.addEventListener('click', () => addExpenseItem());
+    }
+
     // Shareable link button
     document.getElementById('shareLinkBtn').addEventListener('click', copyShareableLink);
     
@@ -247,6 +335,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 // Make functions available globally
 window.removeIncomeSource = removeIncomeSource;
 window.addIncomeSource = addIncomeSource;
+window.removeExpenseItem = removeExpenseItem;
+window.addExpenseItem = addExpenseItem;
 window.app = app;
 
 // Copy shareable link

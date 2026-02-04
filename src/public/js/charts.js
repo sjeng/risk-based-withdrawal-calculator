@@ -151,139 +151,113 @@ function createProjectionChart(results) {
     });
 }
 
-// Create guardrail status chart
-function createGuardrailChart(results) {
+// Create income and expenses chart
+function createCashflowChart(results) {
     updateChartDefaults();
-    const ctx = document.getElementById('guardrailChart');
-    
-    // Destroy existing chart if it exists
-    if (app.charts.guardrail) {
-        app.charts.guardrail.destroy();
+    const ctx = document.getElementById('cashflowChart');
+
+    if (app.charts.cashflow) {
+        app.charts.cashflow.destroy();
     }
-    
-    const pos = results.probability_of_success;
-    const lower = results.guardrail_thresholds.lower;
-    const upper = results.guardrail_thresholds.upper;
-    const target = results.guardrail_thresholds.target;
-    
-    // Determine status color
-    let statusColor;
-    if (pos > upper) {
-        statusColor = 'rgba(59, 130, 246, 0.8)'; // Blue (Opportunity)
-    } else if (pos < lower) {
-        statusColor = 'rgba(239, 68, 68, 0.8)'; // Red (Danger)
-    } else {
-        statusColor = 'rgba(34, 197, 94, 0.8)'; // Green (Safe Zone)
-    }
-    
-    app.charts.guardrail = new Chart(ctx, {
-        type: 'bar',
+
+    const timeline = results.cashflow_timeline || [];
+    const labels = timeline.map(entry => `Year ${entry.year}`);
+    const ages = timeline.map(entry => entry.age);
+
+    app.charts.cashflow = new Chart(ctx, {
+        type: 'line',
         data: {
-            labels: ['Current PoS'],
+            labels,
             datasets: [
                 {
-                    label: 'Probability of Success',
-                    data: [pos],
-                    backgroundColor: statusColor,
-                    borderColor: statusColor.replace('0.8', '1'),
-                    borderWidth: 2
+                    label: 'Income',
+                    data: timeline.map(entry => entry.income),
+                    borderColor: 'rgba(34, 197, 94, 0.9)',
+                    backgroundColor: 'rgba(34, 197, 94, 0.15)',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    tension: 0.3
+                },
+                {
+                    label: 'Expenses',
+                    data: timeline.map(entry => entry.expenses),
+                    borderColor: 'rgba(239, 68, 68, 0.9)',
+                    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    tension: 0.3
+                },
+                {
+                    label: 'Net Withdrawal',
+                    data: timeline.map(entry => entry.net_withdrawal),
+                    borderColor: 'rgba(59, 130, 246, 0.9)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    tension: 0.3
                 }
             ]
         },
         options: {
             responsive: true,
             maintainAspectRatio: true,
-            indexAxis: 'y',
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
             plugins: {
                 title: {
                     display: true,
-                    text: 'Current Position vs Guardrails',
+                    text: 'Income, Expenses, and Net Withdrawals',
                     font: {
                         size: 14,
                         weight: 'bold'
                     }
                 },
                 legend: {
-                    display: false
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            return 'Probability of Success: ' + context.parsed.x.toFixed(1) + '%';
+                    display: true,
+                    position: 'bottom',
+                    labels: {
+                        boxWidth: 12,
+                        font: {
+                            size: 11
                         }
                     }
                 },
-                annotation: {
-                    annotations: {
-                        lowerGuardrail: {
-                            type: 'line',
-                            xMin: lower,
-                            xMax: lower,
-                            borderColor: 'rgba(239, 68, 68, 0.8)',
-                            borderWidth: 3,
-                            borderDash: [5, 5],
-                            label: {
-                                display: true,
-                                content: 'Lower (' + lower + '%)',
-                                position: 'start',
-                                backgroundColor: 'rgba(239, 68, 68, 0.8)',
-                                color: 'white',
-                                font: {
-                                    size: 10
-                                }
-                            }
+                tooltip: {
+                    callbacks: {
+                        title: function(context) {
+                            const index = context[0].dataIndex;
+                            return `Year ${timeline[index].year} (Age ${ages[index]})`;
                         },
-                        upperGuardrail: {
-                            type: 'line',
-                            xMin: upper,
-                            xMax: upper,
-                            borderColor: 'rgba(34, 197, 94, 0.8)',
-                            borderWidth: 3,
-                            borderDash: [5, 5],
-                            label: {
-                                display: true,
-                                content: 'Upper (' + upper + '%)',
-                                position: 'start',
-                                backgroundColor: 'rgba(34, 197, 94, 0.8)',
-                                color: 'white',
-                                font: {
-                                    size: 10
-                                }
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
                             }
-                        },
-                        targetLine: {
-                            type: 'line',
-                            xMin: target,
-                            xMax: target,
-                            borderColor: 'rgba(99, 102, 241, 0.6)',
-                            borderWidth: 2,
-                            borderDash: [3, 3],
-                            label: {
-                                display: true,
-                                content: 'Target (' + target + '%)',
-                                position: 'center',
-                                backgroundColor: 'rgba(99, 102, 241, 0.8)',
-                                color: 'white',
-                                font: {
-                                    size: 10
-                                }
-                            }
+                            label += formatCurrency(context.parsed.y);
+                            return label;
                         }
                     }
                 }
             },
             scales: {
-                x: {
-                    min: 0,
-                    max: 100,
+                y: {
+                    beginAtZero: true,
                     ticks: {
                         callback: function(value) {
-                            return value + '%';
+                            return '$' + (value / 1000).toFixed(0) + 'k';
                         }
                     },
                     title: {
                         display: true,
-                        text: 'Probability of Success (%)'
+                        text: 'Annual Amount'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Year'
                     }
                 }
             }
@@ -293,4 +267,4 @@ function createGuardrailChart(results) {
 
 // Export for use in other modules
 window.createProjectionChart = createProjectionChart;
-window.createGuardrailChart = createGuardrailChart;
+window.createCashflowChart = createCashflowChart;

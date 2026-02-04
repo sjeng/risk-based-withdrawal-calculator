@@ -224,7 +224,8 @@ legend {
 }
 
 /* Income Sources */
-.income-source {
+.income-source,
+.expense-item {
     background: var(--bg-panel);
     border: 1px solid var(--border-color);
     border-radius: 6px;
@@ -233,14 +234,16 @@ legend {
     position: relative;
 }
 
-.income-source-header {
+.income-source-header,
+.expense-item-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 15px;
 }
 
-.remove-income {
+.remove-income,
+.remove-expense {
     background: var(--danger-color);
     color: var(--text-on-accent);
     border: none;
