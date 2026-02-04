@@ -1,7 +1,21 @@
 // Chart creation and management using Chart.js
 
+function updateChartDefaults() {
+    const isLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+    if (isLight) {
+        // Light Mode Colors
+        Chart.defaults.color = '#374151'; // gray-700
+        Chart.defaults.borderColor = '#e5e7eb'; // gray-200
+    } else {
+        // Dark Mode Colors
+        Chart.defaults.color = '#d1d5db'; // gray-300
+        Chart.defaults.borderColor = '#4b5563'; // border-color (gray-600)
+    }
+}
+
 // Create projection chart (Monte Carlo fan chart)
 function createProjectionChart(results) {
+    updateChartDefaults();
     const ctx = document.getElementById('projectionChart');
     
     // Destroy existing chart if it exists
@@ -139,6 +153,7 @@ function createProjectionChart(results) {
 
 // Create guardrail status chart
 function createGuardrailChart(results) {
+    updateChartDefaults();
     const ctx = document.getElementById('guardrailChart');
     
     // Destroy existing chart if it exists
