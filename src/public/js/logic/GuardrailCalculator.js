@@ -146,8 +146,6 @@ export class GuardrailCalculator {
             monte_carlo: mcResults,
             portfolio_metrics: {
                 current_value: params.current_portfolio_value,
-                initial_value: params.initial_portfolio_value,
-                change_since_retirement: params.current_portfolio_value - params.initial_portfolio_value,
                 expected_return: parseFloat((simulation.getExpectedReturn() * 100).toFixed(2)),
                 portfolio_volatility: parseFloat((simulation.getPortfolioVolatility() * 100).toFixed(2)),
             },
@@ -349,7 +347,6 @@ export class GuardrailCalculator {
         const required = [
             'retirement_age',
             'planning_horizon_years',
-            'initial_portfolio_value',
             'current_portfolio_value',
             'desired_spending',
             'stock_allocation',
@@ -383,10 +380,6 @@ export class GuardrailCalculator {
         // Validate portfolio values
         if (params.current_portfolio_value <= 0) {
             console.warn("Current portfolio value must be positive");
-        }
-
-        if (params.initial_portfolio_value <= 0) {
-            console.warn("Initial portfolio value must be positive");
         }
 
         if (params.desired_spending < 0) {

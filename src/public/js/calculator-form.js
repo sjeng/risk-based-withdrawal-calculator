@@ -522,7 +522,6 @@ function collectFormData() {
         spouse2_age: parseInt(formData.get('spouse2_age')) || null,
         retirement_age: parseInt(formData.get('retirement_age')),
         planning_horizon_years: parseInt(formData.get('planning_horizon_years')),
-        initial_portfolio_value: parseFloat(formData.get('initial_portfolio_value')),
         current_portfolio_value: parseFloat(formData.get('current_portfolio_value')),
         desired_spending: parseFloat(formData.get('desired_spending')),
         stock_allocation: parseFloat(formData.get('stock_allocation')),
@@ -629,18 +628,10 @@ function validateFormData(data) {
     }
     
     // Check positive values
-    if (data.current_portfolio_value <= 0 || data.initial_portfolio_value <= 0) {
-        if (data.current_portfolio_value <= 0) {
-            showFieldError('currentPortfolio', 'Must be a positive value');
-            if (!firstInvalidFieldId) {
-                firstInvalidFieldId = 'currentPortfolio';
-            }
-        }
-        if (data.initial_portfolio_value <= 0) {
-            showFieldError('initialPortfolio', 'Must be a positive value');
-            if (!firstInvalidFieldId) {
-                firstInvalidFieldId = 'initialPortfolio';
-            }
+    if (data.current_portfolio_value <= 0) {
+        showFieldError('currentPortfolio', 'Must be a positive value');
+        if (!firstInvalidFieldId) {
+            firstInvalidFieldId = 'currentPortfolio';
         }
         scrollToField(firstInvalidFieldId);
         return {
