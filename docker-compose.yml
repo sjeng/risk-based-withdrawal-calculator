@@ -1,47 +1,8 @@
 services:
-  nginx:
-    build:
-      context: ./docker/nginx
-      dockerfile: Dockerfile
-    container_name: guardrail_nginx
+  web:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
     volumes:
-      - ./src:/var/www/html
-    depends_on:
-      - php
-    networks:
-      - guardrail_network
-      - traefik_proxy
-    labels:
-      - traefik.enable=true
-      - traefik.docker.network=traefik_proxy
-      - traefik.http.routers.guardrail.rule=Host(`guardrail.jenga.local`)
-      - traefik.http.routers.guardrail.service=guardrail
-      - traefik.http.services.guardrail.loadbalancer.server.port=80
-      - traefik.http.services.guardrail.loadbalancer.server.scheme=http
-    restart: unless-stopped
-
-  php:
-    build:
-      context: ./docker/php
-      dockerfile: Dockerfile
-    container_name: guardrail_php
-    volumes:
-      - ./src:/var/www/html
-      - sqlite_data:/var/www/html/storage
-    environment:
-      - DB_PATH=/var/www/html/storage/database.sqlite
-      - APP_ENV=${APP_ENV:-development}
-      - APP_DEBUG=${APP_DEBUG:-true}
-    networks:
-      - guardrail_network
-    restart: unless-stopped
-
-networks:
-  guardrail_network:
-    driver: bridge
-  traefik_proxy:
-    external: true
-
-volumes:
-  sqlite_data:
-    driver: local
+      - ./src/public:/usr/share/nginx/html
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d

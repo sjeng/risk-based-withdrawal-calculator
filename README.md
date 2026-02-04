@@ -1,6 +1,6 @@
 # Risk-Based Guardrail Calculator
 
-A comprehensive PHP application implementing Kitce's Risk-Based Monte Carlo Probability of Success Guardrails for retirement distribution planning.
+A comprehensive client-side JavaScript application implementing Kitce's Risk-Based Monte Carlo Probability of Success Guardrails for retirement distribution planning.
 
 ## Overview
 
@@ -14,50 +14,67 @@ This application calculates retirement spending recommendations based on risk-ba
 
 ## Features
 
-- **Monte Carlo Simulation**: 10,000 iterations for probability of success calculation
-- **Risk-Based Guardrails**: Configurable upper/lower PoS thresholds
-- **Retirement Spending Smile**: Model realistic spending patterns over retirement
-- **Multiple Income Sources**: Social Security, pensions, and other income streams
-- **Historical Data Tracking**: Store and compare calculations over time
-- **Interactive Visualizations**: Charts showing Monte Carlo projections and guardrail status
-- **Portable Docker Environment**: Easy deployment and migration
-- **Auto-save Functionality**: Form inputs automatically saved as you type
+- **Client-Side Simulation**: 10,000 Monte Carlo iterations run locally in your browser using Web Workers.
+- **Risk-Based Guardrails**: Configurable upper/lower PoS thresholds.
+- **Retirement Spending Smile**: Model realistic spending patterns over retirement.
+- **Multiple Income Sources**: Social Security, pensions, and other income streams.
+- **Local Persistence**: Calculation inputs are automatically saved to your browser's Local Storage.
+- **Shareable Links**: Inputs are encoded into a compact `state` query param for easy sharing.
+- **Interactive Visualizations**: Charts showing Monte Carlo projections and guardrail status.
+- **Static Architecture**: No server-side processing or database required.
 
 ## Technology Stack
 
-- **PHP 8.2** with FPM
-- **Nginx** web server
-- **SQLite 3** database (lightweight, file-based)
-- **Docker Compose** for containerization
+- **Vanilla JavaScript** (ES6+)
+- **Web Workers** for background processing
 - **Chart.js** for visualizations
-- **Vanilla JavaScript** for frontend interactivity
+- **HTML5 & CSS3**
 
-## Installation
+## Installation & Usage
 
-### Prerequisites
+### Option 1: Docker (Recommended)
 
-- Docker and Docker Compose installed
-- Git
+Running with Docker ensures all browser security features working correctly (Web Workers, ES Modules).
 
-### Setup
+1.  Start the container:
+    ```bash
+    docker-compose up -d
+    ```
+2.  Open your browser to: [http://localhost:8080](http://localhost:8080)
 
-1. Clone the repository:
-   ```bash
-   git clone <repository-url>
-   cd guardrail-calculator
-   ```
+### Option 2: Local Static Server
 
-2. Build and start the Docker containers:
-   ```bash
-   docker-compose up -d --build
-   ```
+If you have Python installed, you can run a simple server:
+```bash
+cd src/public
+python3 -m http.server 8080
+```
+Then open [http://localhost:8080](http://localhost:8080).
 
-3. Access the application:
-   - **Main Application**: http://localhost:8080
-   - **Calculation History**: http://localhost:8080/history.php
-   - **PHP Info**: http://localhost:8080/phpinfo.php
+### Note on File System Access
+Opening `src/public/index.html` directly (via `file://`) will likely fail in modern browsers due to security restrictions on Web Workers and ES Modules. Please use one of the HTTP server options above.
 
-**Note**: The SQLite database is automatically created on first use in `src/storage/database.sqlite`.
+### Hosting
+
+This is a static website. You can host it on:
+- GitHub Pages
+- Netlify
+- Vercel
+- Any standard web server (Apache, Nginx)
+
+### Development
+
+The core logic is located in `src/public/js/logic/`. The Web Worker `src/public/js/worker.js` handles the simulation execution.
+
+## Methodology
+
+Based on [Kitce's Risk-Based Guardrails](https://www.kitces.com/blog/risk-based-monte-carlo-probability-of-success-guardrails-retirement-distribution-hatchet/) by Derek Tharp and Justin Fitzpatrick.
+
+The calculator performs 10,000 Monte Carlo simulations per run, projecting portfolio growth based on:
+- **Stocks**: 10% mean return, 20% std dev
+- **Bonds**: 5% mean return, 6% std dev
+- **Cash**: 3% mean return, 1% std dev
+- **Inflation**: 2.5% (default)
 
 ## Usage
 
@@ -87,32 +104,15 @@ This application calculates retirement spending recommendations based on risk-ba
 ## Project Structure
 
 ```
-guardrail-calculator/
-├── docker/                    # Docker configuration
-│   ├── nginx/                # Nginx web server
-│   ├── php/                  # PHP-FPM
-│   └── sqlite/               # SQLite initialization
+risk-based-guardrail/
+├── docker/                  # Docker configuration
+│   └── nginx/               # Nginx web server
 ├── src/
-│   ├── public/               # Web-accessible files
-│   │   ├── index.php        # Main calculator interface
-│   │   ├── api.php          # API endpoint
-│   │   ├── history.php      # Calculation history
-│   │   ├── css/             # Stylesheets
-│   │   └── js/              # JavaScript
-│   ├── classes/              # PHP classes
-│   │   ├── Database.php              
-│   │   ├── MonteCarloSimulation.php  # Core MC engine
-│   │   ├── GuardrailCalculator.php   # Main calculator
-│   │   ├── ReturnGenerator.php       # Return modeling
-│   │   ├── CashFlowModel.php         # Cash flow projections
-│   │   ├── SpendingProfile.php       # Spending patterns
-│   │   ├── CalculationRepository.php # Database operations
-│   │   └── SavedInputRepository.php  # Auto-save persistence
-│   ├── config/               # Configuration files
-│   ├── storage/              # Database and logs
-│   │   ├── database.sqlite  # SQLite database (auto-created)
-│   │   └── logs/            # Application logs
-│   └── utils/                # Utility functions
+│   └── public/              # Web-accessible files
+│       ├── index.html       # Main calculator interface
+│       ├── css/             # Stylesheets
+│       └── js/              # JavaScript
+│           └── logic/        # Core simulation logic
 └── docker-compose.yml
 ```
 
@@ -140,19 +140,6 @@ This calculator implements the risk-based guardrails approach described in [Kitc
    - Current portfolio value vs. initial plan
 
 ## Configuration
-
-### Environment Variables
-
-Optional environment variables (defaults work out of the box):
-
-```bash
-# Database (optional, defaults to src/storage/database.sqlite)
-DB_PATH=/var/www/html/storage/database.sqlite
-
-# Application
-APP_ENV=development
-APP_DEBUG=true
-```
 
 ### Asset Allocation
 
@@ -188,116 +175,17 @@ docker-compose restart php
 docker-compose up -d --build
 ```
 
-### Access PHP container shell
-```bash
-docker exec -it guardrail_php sh
-```
-
-### Access SQLite database directly
-```bash
-docker exec -it guardrail_php sqlite3 /var/www/html/storage/database.sqlite
-```
-
-## Migration and Portability
-
-To migrate to a new host:
-
-1. Copy entire project directory
-2. Run `docker-compose up -d --build`
-3. Database file is in `src/storage/database.sqlite` (automatically backed up with volume)
-
-To backup database:
-```bash
-# Copy from container
-docker cp guardrail_php:/var/www/html/storage/database.sqlite ./backup.sqlite
-
-# Or use SQLite dump
-docker exec guardrail_php sqlite3 /var/www/html/storage/database.sqlite .dump > backup.sql
-```
-
-To restore database:
-```bash
-# Copy to container
-docker cp ./backup.sqlite guardrail_php:/var/www/html/storage/database.sqlite
-
-# Or restore from dump
-docker exec -i guardrail_php sqlite3 /var/www/html/storage/database.sqlite < backup.sql
-```
-
-## Development
-
-### Adding New Features
-
-1. Create new PHP classes in `src/classes/`
-2. Update database schema in `docker/sqlite/init.sql`
-3. Add frontend components in `src/public/`
-4. Test thoroughly with various scenarios
-
-### Code Standards
-
-- PSR-12 coding standards for PHP
-- Object-oriented architecture
-- Clear separation of concerns
-- Comprehensive error handling
-- Input validation and sanitization
-
 ## Performance Considerations
 
-- Monte Carlo simulations (10,000 iterations) typically complete in ~600ms
-- SQLite is extremely fast for single-user operations
-- No network overhead (file-based database)
-- Database auto-initializes on first use
-- Efficient for read-heavy workloads
-
-## Troubleshooting
-
-### Containers won't start
-```bash
-docker-compose down
-docker-compose up -d --build
-```
-
-### Database connection errors
-- Check that storage directory has proper permissions
-- Verify database file exists: `docker exec guardrail_php ls -la /var/www/html/storage/`
-- Check logs: `docker-compose logs php`
-
-### Calculation timeouts
-- Increase `max_execution_time` in `docker/php/php.ini`
-- Reduce Monte Carlo iterations (not recommended below 1,000)
-
-### Permission issues
-```bash
-docker-compose exec php chown -R www-data:www-data /var/www/html/storage
-```
-
-### View database schema
-```bash
-docker exec -it guardrail_php sqlite3 /var/www/html/storage/database.sqlite ".schema"
-```
-
-### Query database directly
-```bash
-docker exec -it guardrail_php sqlite3 /var/www/html/storage/database.sqlite
-# Then run SQL queries:
-# SELECT * FROM calculations ORDER BY calculation_date DESC LIMIT 5;
-# .quit to exit
-```
+- Monte Carlo simulations (10,000 iterations) typically complete in under a second on modern hardware
+- Runs entirely in the browser with no network overhead
 
 ## References
 
-- [Kitce's Risk-Based Guardrails Article](https://www.kitces.com/blog/risk-based-monte-carlo-probability-of-success-guardrails-retirement-distribution-hatchet/)
+- [Kitce's Risk-Based Guardrails Article](https://www.kitces.com/blog/risk-based-monte-carlo-probability-of-success-guardrails-retirement-distribution-hatchet/) by Derek Tharp and Justin Fitzpatrick
 - [Retirement Spending Smile Research](https://www.kitces.com/blog/estimating-changes-in-retirement-expenditures-and-the-retirement-spending-smile/)
 - [Guyton-Klinger Withdrawal Rules](https://www.kitces.com/blog/probability-of-success-driven-guardrails-advantages-monte-carlo-simulations-analysis-communication/)
 
 ## License
 
 [Specify your license here]
-
-## Contributing
-
-[Contribution guidelines if applicable]
-
-## Support
-
-[Contact information or support channels]
