@@ -44,7 +44,7 @@ class MonteCarloSimulation {
         float $bondAllocation,
         float $cashAllocation,
         float $annualFeePercentage = 0.0075,
-        int $iterations = 2000
+        int $iterations = 10000
     ) {
         $this->config = require __DIR__ . '/../config/config.php';
         $this->returnGenerator = new ReturnGenerator();
