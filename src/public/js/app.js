@@ -437,12 +437,18 @@ function exportInputsAsJson() {
         const jsonString = JSON.stringify(exportData, null, 2);
         
         // Copy to clipboard
-        navigator.clipboard.writeText(jsonString).then(() => {
-            showExportSuccess('JSON copied to clipboard!');
-        }).catch(err => {
-            // Fallback: show in modal
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(jsonString).then(() => {
+                showExportSuccess('JSON copied to clipboard!');
+            }).catch(err => {
+                console.warn('Clipboard write failed, falling back to modal', err);
+                showJsonModal(jsonString);
+            });
+        } else {
+            // Fallback for non-secure contexts or browsers without clipboard API
+            console.warn('Clipboard API unavailable, falling back to modal');
             showJsonModal(jsonString);
-        });
+        }
         
     } catch (error) {
         console.error('Export error:', error);
