@@ -1,4 +1,4 @@
-# Risk-Based Guardrail Calculator
+# Risk-Based Guardrail Withdrawal Calculator
 
 A comprehensive client-side JavaScript application implementing Kitce's Risk-Based Monte Carlo Probability of Success Guardrails for retirement distribution planning.
 
