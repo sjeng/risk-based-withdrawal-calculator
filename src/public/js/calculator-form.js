@@ -61,7 +61,7 @@ function collectFormData() {
         planning_horizon_years: parseInt(formData.get('planning_horizon_years')),
         initial_portfolio_value: parseFloat(formData.get('initial_portfolio_value')),
         current_portfolio_value: parseFloat(formData.get('current_portfolio_value')),
-        current_spending: parseFloat(formData.get('current_spending')),
+        desired_spending: parseFloat(formData.get('desired_spending')),
         stock_allocation: parseFloat(formData.get('stock_allocation')),
         bond_allocation: parseFloat(formData.get('bond_allocation')),
         cash_allocation: parseFloat(formData.get('cash_allocation')),
@@ -127,10 +127,10 @@ function validateFormData(data) {
     }
     
     // Check spending is non-negative
-    if (data.current_spending < 0) {
+    if (data.desired_spending < 0) {
         return {
             valid: false,
-            message: 'Current spending cannot be negative'
+            message: 'Desired spending cannot be negative'
         };
     }
     

@@ -105,7 +105,7 @@ class CalculationRepository {
                 ':planning_horizon_years' => $params['planning_horizon_years'],
                 ':initial_portfolio_value' => $params['initial_portfolio_value'],
                 ':current_portfolio_value' => $params['current_portfolio_value'],
-                ':current_annual_spending' => $params['current_spending'],
+                ':current_annual_spending' => $params['desired_spending'],
                 ':stock_allocation' => $params['stock_allocation'],
                 ':bond_allocation' => $params['bond_allocation'],
                 ':cash_allocation' => $params['cash_allocation'],

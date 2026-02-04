@@ -69,8 +69,8 @@ $config = require __DIR__ . '/../config/config.php';
                         </div>
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="currentSpending">Current Annual Spending</label>
-                                <input type="number" id="currentSpending" name="current_spending" required min="0" step="1" value="45000">
+                                <label for="desiredSpending">Desired Annual Spending</label>
+                                <input type="number" id="desiredSpending" name="desired_spending" required min="0" step="1" value="45000">
                             </div>
                         </div>
                     </fieldset>
@@ -190,8 +190,8 @@ $config = require __DIR__ . '/../config/config.php';
                     
                     <div class="result-grid">
                         <div class="result-item">
-                            <div class="result-label">Current Spending</div>
-                            <div class="result-value" id="currentSpendingResult">--</div>
+                            <div class="result-label">Desired Spending</div>
+                            <div class="result-value" id="desiredSpendingResult">--</div>
                         </div>
                         <div class="result-item">
                             <div class="result-label">Recommended Spending</div>

@@ -68,7 +68,7 @@ This application calculates retirement spending recommendations based on risk-ba
    - Current age and retirement age
    - Initial portfolio value (at retirement)
    - Current portfolio value
-   - Current annual spending
+   - Desired annual spending
    - Asset allocation (stocks/bonds/cash)
 3. Add income sources (Social Security, pensions, etc.)
 4. Select spending profile (flat or retirement smile)
@@ -80,7 +80,7 @@ This application calculates retirement spending recommendations based on risk-ba
 - **Probability of Success**: Percentage of simulations where portfolio lasted the full planning horizon
 - **Guardrail Status**:
   - **Above Upper**: PoS > 95% → Consider increasing spending
-  - **Within Range**: PoS between 80-95% → Maintain current spending
+  - **Within Range**: PoS between 80-95% → Maintain desired spending
   - **Below Lower**: PoS < 80% → Consider decreasing spending
 - **Recommended Spending**: Adjusted spending based on guardrail breach (if any)
 

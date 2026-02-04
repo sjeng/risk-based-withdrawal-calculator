@@ -175,7 +175,7 @@ function displayResults(results) {
     statusBadge.className = 'status-badge ' + status.class;
     
     // Spending values
-    document.getElementById('currentSpendingResult').textContent = formatCurrency(results.current_spending);
+    document.getElementById('desiredSpendingResult').textContent = formatCurrency(results.desired_spending);
     document.getElementById('recommendedSpendingResult').textContent = formatCurrency(results.recommended_spending);
     
     // Adjustment needed
@@ -331,7 +331,7 @@ function populateFormFromSaved(savedData) {
         'planning_horizon_years': 'planningHorizon',
         'initial_portfolio_value': 'initialPortfolio',
         'current_portfolio_value': 'currentPortfolio',
-        'current_annual_spending': 'currentSpending',
+        'current_annual_spending': 'desiredSpending',
         'stock_allocation': 'stockAllocation',
         'bond_allocation': 'bondAllocation',
         'cash_allocation': 'cashAllocation',
@@ -406,7 +406,7 @@ function exportInputsAsJson() {
             portfolio: {
                 initial_portfolio_value: formData.initial_portfolio_value,
                 current_portfolio_value: formData.current_portfolio_value,
-                current_spending: formData.current_spending
+                desired_spending: formData.desired_spending
             },
             asset_allocation: {
                 stocks: formData.stock_allocation + '%',

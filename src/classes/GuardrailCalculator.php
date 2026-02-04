@@ -99,7 +99,7 @@ class GuardrailCalculator {
         // Create and run Monte Carlo simulation
         $currentAge = $params['spouse1_age'] ?? $params['current_age'];
         
-        $simulation = $this->createSimulation($params, $cashFlowModel, $params['current_spending'], $currentAge);
+        $simulation = $this->createSimulation($params, $cashFlowModel, $params['desired_spending'], $currentAge);
         $mcResults = $simulation->runSimulation();
         
         // Determine guardrail status and recommendations
@@ -109,7 +109,7 @@ class GuardrailCalculator {
         
         // Calculate recommended spending using target-seeking approach if needed
         if ($spendingAdjustment === 'maintain') {
-             $recommendedSpending = $params['current_spending'];
+             $recommendedSpending = $params['desired_spending'];
         } else {
              $recommendedSpending = $this->findSpendingForTargetPos(
                  $params, 
@@ -120,7 +120,7 @@ class GuardrailCalculator {
         }
         
         // Calculate current withdrawal rate
-        $currentWithdrawalRate = ($params['current_spending'] / $params['current_portfolio_value']) * 100;
+        $currentWithdrawalRate = ($params['desired_spending'] / $params['current_portfolio_value']) * 100;
         
         $endTime = microtime(true);
         $totalDurationMs = round(($endTime - $startTime) * 1000);
@@ -129,11 +129,11 @@ class GuardrailCalculator {
             'probability_of_success' => $probabilityOfSuccess,
             'guardrail_status' => $guardrailStatus,
             'spending_adjustment_needed' => $spendingAdjustment,
-            'current_spending' => $params['current_spending'],
+            'desired_spending' => $params['desired_spending'],
             'recommended_spending' => $recommendedSpending,
-            'spending_change_amount' => $recommendedSpending - $params['current_spending'],
+            'spending_change_amount' => $recommendedSpending - $params['desired_spending'],
             'spending_change_percentage' => $this->calculatePercentageChange(
-                $params['current_spending'],
+                $params['desired_spending'],
                 $recommendedSpending
             ),
             'current_withdrawal_rate' => round($currentWithdrawalRate, 2),
@@ -187,20 +187,20 @@ class GuardrailCalculator {
         $maxIterations = 12; // Binary search depth
         $searchSimIterations = 1000; // Lower precision for search
         
-        $currentSpending = $params['current_spending'];
+        $desiredSpending = $params['desired_spending'];
         
         if ($adjustmentDirection === 'decrease') {
             $low = 0;
-            $high = $currentSpending;
+            $high = $desiredSpending;
         } else {
-            $low = $currentSpending;
+            $low = $desiredSpending;
             // Cap drastic increases at reasonable 20% withdrawal rate or just double spending
             // A 100% SWR is technically possible to simulate but practically useless.
             // Let's cap at Current Portfolio / 5 (20% withdrawal rate) as an upper bound sanity check
-            $high = max($currentSpending * 2, $params['current_portfolio_value'] / 5);
+            $high = max($desiredSpending * 2, $params['current_portfolio_value'] / 5);
         }
         
-        $bestSpending = $currentSpending;
+        $bestSpending = $desiredSpending;
         $closestPosDiff = 100.0;
         
         for ($i = 0; $i < $maxIterations; $i++) {
@@ -295,7 +295,7 @@ class GuardrailCalculator {
             'planning_horizon_years',
             'initial_portfolio_value',
             'current_portfolio_value',
-            'current_spending',
+            'desired_spending',
             'stock_allocation',
             'bond_allocation',
             'cash_allocation',
@@ -333,8 +333,8 @@ class GuardrailCalculator {
             throw new InvalidArgumentException("Initial portfolio value must be positive");
         }
         
-        if ($params['current_spending'] < 0) {
-            throw new InvalidArgumentException("Current spending cannot be negative");
+        if ($params['desired_spending'] < 0) {
+            throw new InvalidArgumentException("Desired spending cannot be negative");
         }
         
         // Validate allocations
@@ -383,7 +383,7 @@ class GuardrailCalculator {
             
             'within_range' => "Your probability of success ({$pos}%) is within the safe zone " .
                              "({$this->lowerGuardrailPos}% - {$this->upperGuardrailPos}%). " .
-                             "Your current spending of " . number_format($results['current_spending'], 0) . " is sustainable. " .
+                             "Your desired spending of " . number_format($results['desired_spending'], 0) . " is sustainable. " .
                              "No adjustment is needed at this time.",
         ];
         

@@ -122,7 +122,7 @@ class SavedInputRepository {
             ':planning_horizon_years' => $inputs['planning_horizon_years'] ?? null,
             ':initial_portfolio_value' => $inputs['initial_portfolio_value'] ?? null,
             ':current_portfolio_value' => $inputs['current_portfolio_value'] ?? null,
-            ':current_annual_spending' => $inputs['current_spending'] ?? $inputs['current_annual_spending'] ?? null,
+            ':current_annual_spending' => $inputs['desired_spending'] ?? $inputs['current_spending'] ?? $inputs['current_annual_spending'] ?? null,
             ':stock_allocation' => $inputs['stock_allocation'] ?? null,
             ':bond_allocation' => $inputs['bond_allocation'] ?? null,
             ':cash_allocation' => $inputs['cash_allocation'] ?? null,

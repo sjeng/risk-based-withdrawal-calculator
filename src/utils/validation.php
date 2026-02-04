@@ -166,7 +166,7 @@ function validateCalculationInput(array $params): array {
         'planning_horizon_years',
         'initial_portfolio_value',
         'current_portfolio_value',
-        'current_spending',
+        'desired_spending',
         'stock_allocation',
         'bond_allocation',
         'cash_allocation',
@@ -211,7 +211,7 @@ function validateCalculationInput(array $params): array {
     // Validate portfolio values
     $validator->validatePositive('initial_portfolio_value', $params['initial_portfolio_value']);
     $validator->validatePositive('current_portfolio_value', $params['current_portfolio_value']);
-    $validator->validateNonNegative('current_spending', $params['current_spending']);
+    $validator->validateNonNegative('desired_spending', $params['desired_spending']);
     
     // Validate asset allocations
     $validator->validatePercentage('stock_allocation', $params['stock_allocation']);
@@ -295,7 +295,7 @@ function sanitizeCalculationInput(array $params): array {
     $floatFields = [
         'initial_portfolio_value',
         'current_portfolio_value',
-        'current_spending',
+        'desired_spending',
         'stock_allocation',
         'bond_allocation',
         'cash_allocation',

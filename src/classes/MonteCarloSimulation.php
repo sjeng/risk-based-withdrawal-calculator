@@ -26,7 +26,7 @@ class MonteCarloSimulation {
     private int $planningHorizonYears;
     private int $currentAge;
     private int $retirementAge;
-    private float $currentSpending;
+    private float $desiredSpending;
     
     // Results storage
     private array $simulationResults = [];
@@ -36,7 +36,7 @@ class MonteCarloSimulation {
     public function __construct(
         CashFlowModel $cashFlowModel,
         float $currentPortfolioValue,
-        float $currentSpending,
+        float $desiredSpending,
         int $currentAge,
         int $retirementAge,
         int $planningHorizonYears,
@@ -51,7 +51,7 @@ class MonteCarloSimulation {
         $this->cashFlowModel = $cashFlowModel;
         
         $this->currentPortfolioValue = $currentPortfolioValue;
-        $this->currentSpending = $currentSpending;
+        $this->desiredSpending = $desiredSpending;
         $this->currentAge = $currentAge;
         $this->retirementAge = $retirementAge;
         $this->planningHorizonYears = $planningHorizonYears;
@@ -163,7 +163,7 @@ class MonteCarloSimulation {
             
             // Get spending for this year
             $spending = $this->cashFlowModel->getSpendingForYear(
-                $this->currentSpending,
+                $this->desiredSpending,
                 $age,
                 $this->retirementAge,
                 $year
