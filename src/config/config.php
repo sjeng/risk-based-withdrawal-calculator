@@ -58,6 +58,12 @@ return [
         ],
     ],
     
+    'correlations' => [
+        'stocks_bonds' => 0.1,    // Low positive correlation
+        'stocks_cash' => 0.0,     // Uncorrelated
+        'bonds_cash' => 0.2,      // Interest rate sensitivity
+    ],
+    
     'defaults' => [
         'inflation_rate' => 0.025,  // 2.5%
         'annual_fee' => 0.0075,     // 0.75%

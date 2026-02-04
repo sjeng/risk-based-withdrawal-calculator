@@ -7,10 +7,16 @@
 class ReturnGenerator {
     private array $config;
     private array $returnAssumptions;
+    private array $correlations;
     
     public function __construct() {
         $this->config = require __DIR__ . '/../config/config.php';
         $this->returnAssumptions = $this->config['return_assumptions'];
+        $this->correlations = $this->config['correlations'] ?? [
+            'stocks_bonds' => 0.0,
+            'stocks_cash' => 0.0,
+            'bonds_cash' => 0.0,
+        ];
     }
     
     /**
@@ -32,35 +38,11 @@ class ReturnGenerator {
             throw new InvalidArgumentException("Asset allocations must sum to 100%");
         }
         
-        // Convert percentages to decimals
-        $stockWeight = $stockAllocation / 100.0;
-        $bondWeight = $bondAllocation / 100.0;
-        $cashWeight = $cashAllocation / 100.0;
+        $portfolioExpectedReturn = $this->getExpectedReturn($stockAllocation, $bondAllocation, $cashAllocation);
+        $portfolioVolatility = $this->getPortfolioVolatility($stockAllocation, $bondAllocation, $cashAllocation);
         
-        // Generate returns for each asset class
-        $stockReturn = $this->generateNormalReturn(
-            $this->returnAssumptions['stocks']['mean'],
-            $this->returnAssumptions['stocks']['std_dev']
-        );
-        
-        $bondReturn = $this->generateNormalReturn(
-            $this->returnAssumptions['bonds']['mean'],
-            $this->returnAssumptions['bonds']['std_dev']
-        );
-        
-        $cashReturn = $this->generateNormalReturn(
-            $this->returnAssumptions['cash']['mean'],
-            $this->returnAssumptions['cash']['std_dev']
-        );
-        
-        // Calculate weighted portfolio return
-        $portfolioReturn = (
-            $stockWeight * $stockReturn +
-            $bondWeight * $bondReturn +
-            $cashWeight * $cashReturn
-        );
-        
-        return $portfolioReturn;
+        // Generate single portfolio return from aggregated distribution
+        return $this->generateNormalReturn($portfolioExpectedReturn, $portfolioVolatility);
     }
     
     /**
@@ -108,24 +90,35 @@ class ReturnGenerator {
     
     /**
      * Calculate portfolio volatility (standard deviation)
-     * Simplified calculation assuming no correlation
+     * accounts for correlation between asset classes
      */
     public function getPortfolioVolatility(
         float $stockAllocation,
         float $bondAllocation,
         float $cashAllocation
     ): float {
-        $stockWeight = $stockAllocation / 100.0;
-        $bondWeight = $bondAllocation / 100.0;
-        $cashWeight = $cashAllocation / 100.0;
+        $wS = $stockAllocation / 100.0;
+        $wB = $bondAllocation / 100.0;
+        $wC = $cashAllocation / 100.0;
         
-        // Simplified variance (assuming zero correlation)
-        $variance = (
-            pow($stockWeight * $this->returnAssumptions['stocks']['std_dev'], 2) +
-            pow($bondWeight * $this->returnAssumptions['bonds']['std_dev'], 2) +
-            pow($cashWeight * $this->returnAssumptions['cash']['std_dev'], 2)
-        );
+        $sdS = $this->returnAssumptions['stocks']['std_dev'];
+        $sdB = $this->returnAssumptions['bonds']['std_dev'];
+        $sdC = $this->returnAssumptions['cash']['std_dev'];
         
+        $corrSB = $this->correlations['stocks_bonds'] ?? 0.0;
+        $corrSC = $this->correlations['stocks_cash'] ?? 0.0;
+        $corrBC = $this->correlations['bonds_cash'] ?? 0.0;
+        
+        // Variance calculation with correlations
+        // Var = w1^2*sd1^2 + w2^2*sd2^2 + ... + 2*w1*w2*sd1*sd2*corr12 + ...
+        $variance = 
+            (pow($wS * $sdS, 2)) +
+            (pow($wB * $sdB, 2)) +
+            (pow($wC * $sdC, 2)) +
+            (2 * $wS * $wB * $sdS * $sdB * $corrSB) +
+            (2 * $wS * $wC * $sdS * $sdC * $corrSC) +
+            (2 * $wB * $wC * $sdB * $sdC * $corrBC);
+            
         return sqrt($variance);
     }
 }
