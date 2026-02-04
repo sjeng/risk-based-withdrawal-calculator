@@ -4,14 +4,19 @@ services:
       context: ./docker/nginx
       dockerfile: Dockerfile
     container_name: guardrail_nginx
-    ports:
-      - "8080:80"
     volumes:
       - ./src:/var/www/html
     depends_on:
       - php
     networks:
       - guardrail_network
+      - traefik_proxy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.guardrail.rule=Host(`guardrail.jenga.local`)
+      - traefik.http.routers.guardrail.service=guardrail
+      - traefik.http.services.guardrail.loadbalancer.server.port=80
+      - traefik.http.services.guardrail.loadbalancer.server.scheme=http
     restart: unless-stopped
 
   php:
@@ -33,6 +38,8 @@ services:
 networks:
   guardrail_network:
     driver: bridge
+  traefik_proxy:
+    external: true
 
 volumes:
   sqlite_data:
