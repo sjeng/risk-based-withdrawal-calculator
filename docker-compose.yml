@@ -13,6 +13,7 @@ services:
       - traefik_proxy
     labels:
       - traefik.enable=true
+      - traefik.docker.network=traefik_proxy
       - traefik.http.routers.guardrail.rule=Host(`guardrail.jenga.local`)
       - traefik.http.routers.guardrail.service=guardrail
       - traefik.http.services.guardrail.loadbalancer.server.port=80
