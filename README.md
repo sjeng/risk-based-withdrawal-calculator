@@ -46,13 +46,13 @@ Running with Docker ensures all browser security features working correctly (Web
 
 If you have Python installed, you can run a simple server:
 ```bash
-cd src/public
+cd docs
 python3 -m http.server 8080
 ```
 Then open [http://localhost:8080](http://localhost:8080).
 
 ### Note on File System Access
-Opening `src/public/index.html` directly (via `file://`) will likely fail in modern browsers due to security restrictions on Web Workers and ES Modules. Please use one of the HTTP server options above.
+Opening `docs/index.html` directly (via `file://`) will likely fail in modern browsers due to security restrictions on Web Workers and ES Modules. Please use one of the HTTP server options above.
 
 ### Hosting
 
@@ -64,7 +64,7 @@ This is a static website. You can host it on:
 
 ### Development
 
-The core logic is located in `src/public/js/logic/`. The Web Worker `src/public/js/worker.js` handles the simulation execution.
+The core logic is located in `docs/js/logic/`. The Web Worker `docs/js/worker.js` handles the simulation execution.
 
 ## Methodology
 
@@ -108,11 +108,11 @@ risk-based-guardrail/
 ├── docker/                  # Docker configuration
 │   └── nginx/               # Nginx web server
 ├── src/
-│   └── public/              # Web-accessible files
-│       ├── index.html       # Main calculator interface
-│       ├── css/             # Stylesheets
-│       └── js/              # JavaScript
-│           └── logic/        # Core simulation logic
+├── docs/                    # Web-accessible files
+│   ├── index.html            # Main calculator interface
+│   ├── css/                  # Stylesheets
+│   └── js/                   # JavaScript
+│       └── logic/            # Core simulation logic
 └── docker-compose.yml
 ```
 

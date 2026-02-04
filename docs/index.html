@@ -55,10 +55,6 @@
                         <legend>Portfolio Information</legend>
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="initialPortfolio">Initial Portfolio Value at Retirement</label>
-                                <input type="number" id="initialPortfolio" name="initial_portfolio_value" required min="0" step="1" value="1000000">
-                            </div>
-                            <div class="form-group">
                                 <label for="currentPortfolio">Current Portfolio Value</label>
                                 <input type="number" id="currentPortfolio" name="current_portfolio_value" required min="0" step="1" value="1050000">
                             </div>
@@ -116,6 +112,13 @@
                         <legend>Income Sources (Social Security, Pensions, etc.)</legend>
                         <div id="incomeSourcesContainer"></div>
                         <button type="button" class="btn btn-secondary" id="addIncomeSource">+ Add Income Source</button>
+                    </fieldset>
+
+                    <!-- Future Expenses -->
+                    <fieldset>
+                        <legend>Future Expenses</legend>
+                        <div id="expenseItemsContainer"></div>
+                        <button type="button" class="btn btn-secondary" id="addExpenseItem">+ Add Future Expense</button>
                     </fieldset>
 
                     <!-- Spending Profile -->
@@ -217,8 +220,8 @@
                         <canvas id="projectionChart"></canvas>
                     </div>
                     <div class="chart-box">
-                        <h3>Guardrail Status</h3>
-                        <canvas id="guardrailChart"></canvas>
+                        <h3>Income & Expenses Over Time</h3>
+                        <canvas id="cashflowChart"></canvas>
                     </div>
                 </div>
 
@@ -257,6 +260,18 @@
                         <div class="stat-item">
                             <span class="stat-label">Portfolio Volatility:</span>
                             <span class="stat-value" id="statVolatility">--</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Current Year Income:</span>
+                            <span class="stat-value" id="statYear0Income">--</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Current Year Expenses:</span>
+                            <span class="stat-value" id="statYear0Expenses">--</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Current Year Withdrawal:</span>
+                            <span class="stat-value" id="statYear0NetWithdrawal">--</span>
                         </div>
                         <div class="stat-item">
                             <span class="stat-label">Calculation Time:</span>

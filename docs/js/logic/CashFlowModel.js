@@ -7,6 +7,7 @@ export class CashFlowModel {
         this.spendingProfile = spendingProfile;
         this.inflationRate = inflationRate;
         this.incomeSources = [];
+        this.expenseItems = [];
     }
 
     addIncomeSource(name, annualAmount, startAge, endAge = null, inflationAdjusted = true) {
@@ -16,6 +17,17 @@ export class CashFlowModel {
             start_age: startAge,
             end_age: endAge,
             inflation_adjusted: inflationAdjusted
+        });
+    }
+
+    addExpenseItem(name, annualAmount, startAge, endAge = null, inflationAdjusted = true, oneTime = false) {
+        this.expenseItems.push({
+            name,
+            annual_amount: annualAmount,
+            start_age: startAge,
+            end_age: endAge,
+            inflation_adjusted: inflationAdjusted,
+            one_time: oneTime
         });
     }
 
@@ -44,6 +56,34 @@ export class CashFlowModel {
         }
 
         return totalIncome;
+    }
+
+    getExpensesForYear(currentAge, yearNumber) {
+        let totalExpenses = 0.0;
+
+        for (const item of this.expenseItems) {
+            if (currentAge < item.start_age) {
+                continue;
+            }
+
+            if (item.one_time) {
+                if (currentAge !== item.start_age) {
+                    continue;
+                }
+            } else if (item.end_age !== null && currentAge > item.end_age) {
+                continue;
+            }
+
+            let amount = item.annual_amount;
+
+            if (item.inflation_adjusted) {
+                amount *= Math.pow(1 + this.inflationRate, yearNumber);
+            }
+
+            totalExpenses += amount;
+        }
+
+        return totalExpenses;
     }
 
     getSpendingForYear(initialSpending, currentAge, retirementAge, yearNumber) {

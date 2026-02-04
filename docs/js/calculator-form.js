@@ -43,6 +43,15 @@ const INCOME_PARAM_MAP = {
     inflation_adjusted: 'i'
 };
 
+const EXPENSE_PARAM_MAP = {
+    name: 'n',
+    annual_amount: 'a',
+    start_age: 's',
+    duration_years: 'd',
+    type: 't',
+    inflation_adjusted: 'i'
+};
+
 const STATE_PARAM_KEY = 'state';
 
 // Load saved data on page load
@@ -73,6 +82,15 @@ document.addEventListener('DOMContentLoaded', () => {
              updateQueryParamsFromForm();
         });
         observer.observe(incomeContainer, { childList: true, subtree: true });
+    }
+
+    const expenseContainer = document.getElementById('expenseItemsContainer');
+    if (expenseContainer) {
+        const observer = new MutationObserver(() => {
+            saveToLocalStorage();
+            updateQueryParamsFromForm();
+        });
+        observer.observe(expenseContainer, { childList: true, subtree: true });
     }
 });
 
@@ -193,6 +211,20 @@ function buildStateFromForm(form) {
             return;
         }
 
+        const expenseMatch = element.name.match(/^future_expenses\[(\d+)\]\[(.+)\]$/);
+        if (expenseMatch) {
+            const index = expenseMatch[1];
+            const field = expenseMatch[2];
+            const shortField = EXPENSE_PARAM_MAP[field] || field;
+            const shortKey = `x${index}${shortField}`;
+
+            if (shouldIncludeValue(element)) {
+                state[shortKey] = element.value;
+            }
+
+            return;
+        }
+
         const shortKey = QUERY_PARAM_MAP[element.name] || element.name;
         if (shouldIncludeValue(element)) {
             state[shortKey] = element.value;
@@ -266,7 +298,7 @@ function loadFromLocalStorage() {
 
         // Populate basic fields
         for (const [key, value] of Object.entries(data)) {
-            if (key === 'income_sources') continue;
+            if (key === 'income_sources' || key === 'future_expenses') continue;
             
             // Handle percentages that were divided by 100 in collectFormData
             if (['annual_fee_percentage', 'inflation_rate'].includes(key)) {
@@ -317,6 +349,26 @@ function loadFromLocalStorage() {
                  window.addIncomeSource();
              }
         }
+
+        if (data.future_expenses && Array.isArray(data.future_expenses) && data.future_expenses.length > 0) {
+            const container = document.getElementById('expenseItemsContainer');
+            if (container) container.innerHTML = '';
+
+            data.future_expenses.forEach(item => {
+                const mappedItem = {
+                    name: item.name,
+                    annual_amount: item.annual_amount,
+                    start_age: item.start_age,
+                    duration_years: item.duration_years,
+                    type: item.type,
+                    inflation_adjusted: item.inflation_adjusted
+                };
+
+                if (window.addExpenseItem) {
+                    window.addExpenseItem(mappedItem);
+                }
+            });
+        }
         
         // Trigger allocation bar update
         if (typeof updateAllocationBar === 'function') {
@@ -352,6 +404,12 @@ function loadFromQueryParams() {
             return acc;
         }, {});
 
+    const reverseExpenseMap = Object.entries(EXPENSE_PARAM_MAP)
+        .reduce((acc, [fullKey, shortKey]) => {
+            acc[shortKey] = fullKey;
+            return acc;
+        }, {});
+
     const decodedState = decodeState(stateParam);
     if (!decodedState || typeof decodedState !== 'object') {
         return false;
@@ -371,6 +429,18 @@ function loadFromQueryParams() {
             return;
         }
 
+        const expenseShortMatch = key.match(/^x(\d+)([a-z]+)$/i);
+        if (expenseShortMatch) {
+            const index = expenseShortMatch[1];
+            const shortField = expenseShortMatch[2];
+            const field = reverseExpenseMap[shortField];
+            if (!field) {
+                return;
+            }
+            resolvedEntries.push([`future_expenses[${index}][${field}]`, value]);
+            return;
+        }
+
         const fullKey = reverseQueryMap[key];
         if (fullKey) {
             resolvedEntries.push([fullKey, value]);
@@ -378,10 +448,16 @@ function loadFromQueryParams() {
     });
 
     const incomeIndexes = new Set();
+    const expenseIndexes = new Set();
     for (const [key] of resolvedEntries) {
         const match = key.match(/^income_sources\[(\d+)\]\[.+\]$/);
         if (match) {
             incomeIndexes.add(parseInt(match[1], 10));
+        }
+
+        const expenseMatch = key.match(/^future_expenses\[(\d+)\]\[.+\]$/);
+        if (expenseMatch) {
+            expenseIndexes.add(parseInt(expenseMatch[1], 10));
         }
     }
 
@@ -399,12 +475,35 @@ function loadFromQueryParams() {
         window.addIncomeSource();
     }
 
+    if (expenseIndexes.size > 0) {
+        const container = document.getElementById('expenseItemsContainer');
+        if (container) container.innerHTML = '';
+
+        const maxIndex = Math.max(...expenseIndexes);
+        for (let index = 0; index < maxIndex; index += 1) {
+            if (window.addExpenseItem) {
+                window.addExpenseItem();
+            }
+        }
+    }
+
     for (const [key, value] of resolvedEntries) {
         const input = form.querySelector(`[name="${CSS.escape(key)}"]`);
         if (input) {
             input.value = value;
         }
     }
+
+    document.querySelectorAll('.expense-item').forEach(item => {
+        const typeSelect = item.querySelector('.expense-type');
+        const durationInput = item.querySelector('.expense-duration');
+        if (!typeSelect || !durationInput) return;
+        const isDuration = typeSelect.value === 'duration';
+        durationInput.disabled = !isDuration;
+        if (!isDuration) {
+            durationInput.value = '';
+        }
+    });
 
     if (typeof updateAllocationBar === 'function') {
         updateAllocationBar();
@@ -423,7 +522,6 @@ function collectFormData() {
         spouse2_age: parseInt(formData.get('spouse2_age')) || null,
         retirement_age: parseInt(formData.get('retirement_age')),
         planning_horizon_years: parseInt(formData.get('planning_horizon_years')),
-        initial_portfolio_value: parseFloat(formData.get('initial_portfolio_value')),
         current_portfolio_value: parseFloat(formData.get('current_portfolio_value')),
         desired_spending: parseFloat(formData.get('desired_spending')),
         stock_allocation: parseFloat(formData.get('stock_allocation')),
@@ -459,15 +557,56 @@ function collectFormData() {
             data.income_sources.push(incomeSource);
         }
     });
+
+    data.future_expenses = [];
+    const expenseItems = document.querySelectorAll('.expense-item');
+    expenseItems.forEach(item => {
+        const itemId = item.dataset.expenseId;
+        const name = formData.get(`future_expenses[${itemId}][name]`);
+
+        if (name) {
+            const type = formData.get(`future_expenses[${itemId}][type]`) || 'one_time';
+            const startAge = parseInt(formData.get(`future_expenses[${itemId}][start_age]`)) || 0;
+            const durationYearsValue = formData.get(`future_expenses[${itemId}][duration_years]`);
+            const durationYears = durationYearsValue ? parseInt(durationYearsValue) : null;
+            const endAge = type === 'duration' && durationYears
+                ? startAge + durationYears - 1
+                : null;
+
+            const expenseItem = {
+                item_id: itemId,
+                name: name,
+                annual_amount: parseFloat(formData.get(`future_expenses[${itemId}][annual_amount]`)) || 0,
+                start_age: startAge,
+                duration_years: durationYears,
+                end_age: endAge,
+                type: type,
+                inflation_adjusted: formData.get(`future_expenses[${itemId}][inflation_adjusted]`) === 'true',
+                one_time: type === 'one_time'
+            };
+
+            data.future_expenses.push(expenseItem);
+        }
+    });
     
     return data;
 }
 
 // Validate form data
 function validateFormData(data) {
+    clearFieldErrors();
+    let firstInvalidFieldId = null;
+
     // Check allocation totals 100%
     const totalAllocation = data.stock_allocation + data.bond_allocation + data.cash_allocation;
     if (Math.abs(totalAllocation - 100) > 0.01) {
+        ['stockAllocation', 'bondAllocation', 'cashAllocation'].forEach((fieldId) => {
+            showFieldError(fieldId, 'Allocations must total 100%');
+            if (!firstInvalidFieldId) {
+                firstInvalidFieldId = fieldId;
+            }
+        });
+        scrollToField(firstInvalidFieldId);
         return {
             valid: false,
             message: 'Asset allocations must total 100%. Current total: ' + totalAllocation.toFixed(1) + '%'
@@ -476,6 +615,12 @@ function validateFormData(data) {
     
     // Check spouse1 age >= age at retirement
     if (data.spouse1_age < data.retirement_age) {
+        showFieldError('spouse1Age', 'Must be greater than or equal to retirement age');
+        showFieldError('retirementAge', 'Must be less than or equal to current age');
+        if (!firstInvalidFieldId) {
+            firstInvalidFieldId = 'spouse1Age';
+        }
+        scrollToField(firstInvalidFieldId);
         return {
             valid: false,
             message: 'Current age must be greater than or equal to age at retirement'
@@ -483,7 +628,12 @@ function validateFormData(data) {
     }
     
     // Check positive values
-    if (data.current_portfolio_value <= 0 || data.initial_portfolio_value <= 0) {
+    if (data.current_portfolio_value <= 0) {
+        showFieldError('currentPortfolio', 'Must be a positive value');
+        if (!firstInvalidFieldId) {
+            firstInvalidFieldId = 'currentPortfolio';
+        }
+        scrollToField(firstInvalidFieldId);
         return {
             valid: false,
             message: 'Portfolio values must be positive'
@@ -492,6 +642,11 @@ function validateFormData(data) {
     
     // Check spending is non-negative
     if (data.desired_spending < 0) {
+        showFieldError('desiredSpending', 'Must be a non-negative value');
+        if (!firstInvalidFieldId) {
+            firstInvalidFieldId = 'desiredSpending';
+        }
+        scrollToField(firstInvalidFieldId);
         return {
             valid: false,
             message: 'Desired spending cannot be negative'
@@ -500,13 +655,44 @@ function validateFormData(data) {
     
     // Check guardrail ordering
     if (data.lower_guardrail >= data.upper_guardrail) {
+        showFieldError('lowerGuardrail', 'Must be less than upper guardrail');
+        showFieldError('upperGuardrail', 'Must be greater than lower guardrail');
+        if (!firstInvalidFieldId) {
+            firstInvalidFieldId = 'lowerGuardrail';
+        }
+        scrollToField(firstInvalidFieldId);
         return {
             valid: false,
             message: 'Lower guardrail must be less than upper guardrail'
         };
     }
+
+    if (data.future_expenses && Array.isArray(data.future_expenses)) {
+        for (const item of data.future_expenses) {
+            if (item.type === 'duration') {
+                if (!item.duration_years || Number.isNaN(item.duration_years) || item.duration_years <= 0) {
+                    if (item.item_id) {
+                        showFieldError(`expenseDuration-${item.item_id}`, 'Enter duration in years');
+                        scrollToField(`expenseDuration-${item.item_id}`);
+                    }
+                    return {
+                        valid: false,
+                        message: 'Duration-based expenses must include a duration in years'
+                    };
+                }
+            }
+        }
+    }
     
     return { valid: true };
+}
+
+function scrollToField(fieldId) {
+    if (!fieldId) return;
+    const field = document.getElementById(fieldId);
+    if (!field) return;
+    field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    field.focus({ preventScroll: true });
 }
 
 // Helper to show field error

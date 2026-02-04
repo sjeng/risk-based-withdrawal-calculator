@@ -4,5 +4,5 @@ services:
     ports:
       - "8080:80"
     volumes:
-      - ./src/public:/usr/share/nginx/html
+      - ./docs:/usr/share/nginx/html
       - ./docker/nginx/conf.d:/etc/nginx/conf.d

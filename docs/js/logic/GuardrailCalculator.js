@@ -71,8 +71,25 @@ export class GuardrailCalculator {
             }
         }
 
+        // Add future expense items
+        if (params.future_expenses && Array.isArray(params.future_expenses)) {
+            for (const item of params.future_expenses) {
+                cashFlowModel.addExpenseItem(
+                    item.name,
+                    parseFloat(item.annual_amount),
+                    parseInt(item.start_age),
+                    item.end_age != null ? parseInt(item.end_age) : null,
+                    item.inflation_adjusted ?? true,
+                    item.one_time ?? false
+                );
+            }
+        }
+
         // Create and run Monte Carlo simulation
         const currentAge = params.spouse1_age ?? params.current_age;
+        const year0Income = cashFlowModel.getIncomeForYear(currentAge, 0);
+        const year0Expenses = cashFlowModel.getExpensesForYear(currentAge, 0);
+        const year0NetWithdrawal = params.desired_spending + year0Expenses - year0Income;
 
         const simulation = this.createSimulation(params, cashFlowModel, params.desired_spending, currentAge);
         const mcResults = simulation.runSimulation();
@@ -129,13 +146,46 @@ export class GuardrailCalculator {
             monte_carlo: mcResults,
             portfolio_metrics: {
                 current_value: params.current_portfolio_value,
-                initial_value: params.initial_portfolio_value,
-                change_since_retirement: params.current_portfolio_value - params.initial_portfolio_value,
                 expected_return: parseFloat((simulation.getExpectedReturn() * 100).toFixed(2)),
                 portfolio_volatility: parseFloat((simulation.getPortfolioVolatility() * 100).toFixed(2)),
             },
+            income_impact: {
+                year0_income: year0Income,
+                year0_expenses: year0Expenses,
+                year0_net_withdrawal: year0NetWithdrawal,
+            },
+            cashflow_timeline: this.buildCashflowTimeline(
+                cashFlowModel,
+                params.desired_spending,
+                currentAge,
+                params.retirement_age,
+                params.planning_horizon_years
+            ),
             calculation_duration_ms: totalDurationMs,
         };
+    }
+
+    buildCashflowTimeline(cashFlowModel, desiredSpending, currentAge, retirementAge, planningHorizonYears) {
+        const timeline = [];
+
+        for (let year = 0; year < planningHorizonYears; year += 1) {
+            const age = currentAge + year;
+            const spending = cashFlowModel.getSpendingForYear(desiredSpending, currentAge, retirementAge, year);
+            const income = cashFlowModel.getIncomeForYear(age, year);
+            const expenses = cashFlowModel.getExpensesForYear(age, year);
+            const netWithdrawal = spending + expenses - income;
+
+            timeline.push({
+                year,
+                age,
+                spending,
+                income,
+                expenses,
+                net_withdrawal: netWithdrawal,
+            });
+        }
+
+        return timeline;
     }
 
     createSimulation(params, cashFlowModel, spending, currentAge, iterations = null) {
@@ -297,7 +347,6 @@ export class GuardrailCalculator {
         const required = [
             'retirement_age',
             'planning_horizon_years',
-            'initial_portfolio_value',
             'current_portfolio_value',
             'desired_spending',
             'stock_allocation',
@@ -331,10 +380,6 @@ export class GuardrailCalculator {
         // Validate portfolio values
         if (params.current_portfolio_value <= 0) {
             console.warn("Current portfolio value must be positive");
-        }
-
-        if (params.initial_portfolio_value <= 0) {
-            console.warn("Initial portfolio value must be positive");
         }
 
         if (params.desired_spending < 0) {
