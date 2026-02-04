@@ -110,11 +110,11 @@ function validateFormData(data) {
         };
     }
     
-    // Check spouse1 age >= retirement age
+    // Check spouse1 age >= age at retirement
     if (data.spouse1_age < data.retirement_age) {
         return {
             valid: false,
-            message: 'Current age must be greater than or equal to retirement age'
+            message: 'Current age must be greater than or equal to age at retirement'
         };
     }
     

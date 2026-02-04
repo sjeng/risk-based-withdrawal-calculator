@@ -43,7 +43,7 @@ $config = require __DIR__ . '/../config/config.php';
                         </div>
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="retirementAge">Retirement Age</label>
+                                <label for="retirementAge">Age at Retirement</label>
                                 <input type="number" id="retirementAge" name="retirement_age" required min="18" max="120" value="65">
                                 <small>Use younger spouse's age if couple</small>
                             </div>

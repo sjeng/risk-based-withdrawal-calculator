@@ -205,7 +205,7 @@ function validateCalculationInput(array $params): array {
     
     // Business logic validations
     if (isset($age) && $age < $params['retirement_age']) {
-        $validator->addError('spouse1_age', 'Current age must be greater than or equal to retirement age');
+        $validator->addError('spouse1_age', 'Current age must be greater than or equal to age at retirement');
     }
     
     // Validate portfolio values
@@ -256,7 +256,7 @@ function validateCalculationInput(array $params): array {
     
     // Business logic validations
     if (isset($age) && $age < $params['retirement_age']) {
-        $validator->addError('spouse1_age', 'Current age must be greater than or equal to retirement age');
+        $validator->addError('spouse1_age', 'Current age must be greater than or equal to age at retirement');
     }
     
     // Validate income sources if provided

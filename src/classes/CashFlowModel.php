@@ -83,7 +83,7 @@ class CashFlowModel {
      * 
      * @param float $initialSpending Initial annual spending
      * @param int $currentAge Current age
-     * @param int $retirementAge Retirement age
+     * @param int $retirementAge Age at retirement
      * @param int $yearNumber Year number (0-indexed from retirement)
      * @return float Total spending for the year
      */
@@ -133,7 +133,7 @@ class CashFlowModel {
      * Returns array of year-by-year cash flows
      * 
      * @param float $initialSpending Initial annual spending
-     * @param int $retirementAge Retirement age
+     * @param int $retirementAge Age at retirement
      * @param int $planningHorizonYears Number of years to project
      * @return array Array of cash flows by year
      */

@@ -317,7 +317,7 @@ class GuardrailCalculator {
         
         // Validate age parameters
         if ($currentAge < $params['retirement_age']) {
-            throw new InvalidArgumentException("Current age must be greater than or equal to retirement age");
+            throw new InvalidArgumentException("Current age must be greater than or equal to age at retirement");
         }
         
         if ($params['planning_horizon_years'] < 1 || $params['planning_horizon_years'] > 60) {
