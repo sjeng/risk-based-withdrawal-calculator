@@ -211,8 +211,11 @@ function displayResults(results) {
     createProjectionChart(results);
     createGuardrailChart(results);
     
-    // Scroll to results
-    document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // Scroll to results with a small top offset so PoS stays visible
+    const resultsSection = document.getElementById('resultsSection');
+    const offset = 170;
+    const top = resultsSection.getBoundingClientRect().top + window.pageYOffset - offset;
+    window.scrollTo({ top, behavior: 'smooth' });
 }
 
 // Initialize
@@ -231,164 +234,20 @@ document.addEventListener('DOMContentLoaded', async function() {
     // JSON Export button
     document.getElementById('exportJsonBtn').addEventListener('click', exportInputsAsJson);
     
-    // Load saved inputs
-    await loadSavedInputs();
-    
-    // Setup auto-save
-    setupAutoSave();
+    // Add default income source if none exist (will be handled by loadFromLocalStorage in calculator-form.js usually, 
+    // but good to have a fallback if empty)
+    if (document.querySelectorAll('.income-source').length === 0) {
+        // We wait a tick to let calculator-form.js loadFromLocalStorage run first?
+        // Actually calculator-form.js runs its DOMContentLoaded listener too.
+        // It's safer to let calculator-form.js handle the initial population.
+        // But if local storage is empty, we want a default one.
+    }
 });
 
 // Make functions available globally
 window.removeIncomeSource = removeIncomeSource;
+window.addIncomeSource = addIncomeSource;
 window.app = app;
-
-// Auto-save functionality
-let autoSaveTimeout;
-let lastSaveTime = null;
-
-function setupAutoSave() {
-    const form = document.getElementById('calculatorForm');
-    
-    // Debounced auto-save on input change
-    form.addEventListener('input', (e) => {
-        // Skip auto-save on submit button
-        if (e.target.type === 'submit') return;
-        
-        clearTimeout(autoSaveTimeout);
-        autoSaveTimeout = setTimeout(() => {
-            saveInputsToDatabase();
-        }, 1000); // Save 1 second after user stops typing
-    });
-    
-    // Also save when income sources are added/removed
-    const observer = new MutationObserver(() => {
-        clearTimeout(autoSaveTimeout);
-        autoSaveTimeout = setTimeout(() => {
-            saveInputsToDatabase();
-        }, 1000);
-    });
-    
-    observer.observe(document.getElementById('incomeSourcesContainer'), {
-        childList: true,
-        subtree: true
-    });
-}
-
-async function saveInputsToDatabase() {
-    try {
-        const formData = collectFormData();
-        
-        const response = await fetch('/api.php?action=save_inputs', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(formData)
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            lastSaveTime = new Date();
-            updateSaveIndicator('Saved');
-        }
-    } catch (error) {
-        console.error('Auto-save error:', error);
-    }
-}
-
-async function loadSavedInputs() {
-    try {
-        const response = await fetch('/api.php?action=load_inputs');
-        const result = await response.json();
-        
-        if (result.success && result.data.has_saved_data) {
-            populateFormFromSaved(result.data.inputs);
-            updateSaveIndicator('Loaded saved data');
-        } else {
-            // No saved data, add one default income source
-            addIncomeSource();
-        }
-    } catch (error) {
-        console.error('Load error:', error);
-        // If load fails, add default income source
-        addIncomeSource();
-    }
-}
-
-function populateFormFromSaved(savedData) {
-    // Populate spouse ages
-    if (savedData.spouse1_age) {
-        document.getElementById('spouse1Age').value = savedData.spouse1_age;
-    }
-    if (savedData.spouse2_age) {
-        document.getElementById('spouse2Age').value = savedData.spouse2_age;
-    }
-    
-    // Populate other fields
-    const fieldMap = {
-        'retirement_age': 'retirementAge',
-        'planning_horizon_years': 'planningHorizon',
-        'initial_portfolio_value': 'initialPortfolio',
-        'current_portfolio_value': 'currentPortfolio',
-        'current_annual_spending': 'desiredSpending',
-        'stock_allocation': 'stockAllocation',
-        'bond_allocation': 'bondAllocation',
-        'cash_allocation': 'cashAllocation',
-        'annual_fee_percentage': 'annualFee',
-        'assumed_inflation_rate': 'inflationRate',
-        'lower_guardrail_pos': 'lowerGuardrail',
-        'upper_guardrail_pos': 'upperGuardrail',
-        'spending_adjustment_percentage': 'spendingAdjustment',
-        'spending_profile_type': 'spendingProfile'
-    };
-    
-    for (const [dbField, domId] of Object.entries(fieldMap)) {
-        if (savedData[dbField] !== null && savedData[dbField] !== undefined) {
-            const element = document.getElementById(domId);
-            if (element) {
-                // Convert decimal back to percentage for display
-                if (dbField === 'annual_fee_percentage' || dbField === 'assumed_inflation_rate') {
-                    element.value = (savedData[dbField] * 100).toFixed(dbField === 'annual_fee_percentage' ? 2 : 1);
-                } else {
-                    element.value = savedData[dbField];
-                }
-            }
-        }
-    }
-    
-    // Load income sources
-    if (savedData.income_sources && savedData.income_sources.length > 0) {
-        savedData.income_sources.forEach(source => {
-            addIncomeSource(source);
-        });
-    } else {
-        // No saved income sources, add one default
-        addIncomeSource();
-    }
-    
-    // Update allocation bar
-    updateAllocationBar();
-}
-
-function updateSaveIndicator(message) {
-    // Create or update save indicator
-    let indicator = document.getElementById('saveIndicator');
-    if (!indicator) {
-        indicator = document.createElement('div');
-        indicator.id = 'saveIndicator';
-        indicator.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #16a34a; color: white; padding: 10px 20px; border-radius: 6px; font-size: 0.9rem; z-index: 1000; transition: opacity 0.3s;';
-        document.body.appendChild(indicator);
-    }
-    
-    indicator.textContent = '✓ ' + message;
-    indicator.style.opacity = '1';
-    
-    // Fade out after 2 seconds
-    setTimeout(() => {
-        indicator.style.opacity = '0';
-    }, 2000);
-}
 
 // Export inputs as JSON
 function exportInputsAsJson() {

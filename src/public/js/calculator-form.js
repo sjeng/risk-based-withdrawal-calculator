@@ -1,5 +1,43 @@
 // Calculator form handling
 
+// Initialize Web Worker
+let calculatorWorker = null;
+try {
+    if (window.Worker) {
+        calculatorWorker = new Worker('js/worker.js', { type: 'module' });
+    } else {
+        console.error("Web Workers are not supported in this browser.");
+    }
+} catch (e) {
+    console.error("Failed to initialize Web Worker:", e);
+}
+
+// Local Storage Key
+const STORAGE_KEY = 'guardrail_calculator_data';
+
+// Load saved data on page load
+document.addEventListener('DOMContentLoaded', () => {
+    loadFromLocalStorage();
+    
+    // Auto-save on input changes
+    const form = document.getElementById('calculatorForm');
+    form.addEventListener('input', debounce(() => {
+        saveToLocalStorage();
+    }, 1000));
+    
+    // Also save when income sources change (using MutationObserver if available, or just relying on inputs)
+    // Inputs inside income sources will trigger the 'input' event on the form due to bubbling.
+    // However, removing an income source (click) isn't an 'input' event.
+    // So we should hook into the remove button or observe the container.
+    const incomeContainer = document.getElementById('incomeSourcesContainer');
+    if (incomeContainer) {
+        const observer = new MutationObserver(() => {
+             saveToLocalStorage();
+        });
+        observer.observe(incomeContainer, { childList: true, subtree: true });
+    }
+});
+
 document.getElementById('calculatorForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     
@@ -18,36 +56,141 @@ document.getElementById('calculatorForm').addEventListener('submit', async funct
         const validation = validateFormData(formData);
         if (!validation.valid) {
             showError(validation.message);
+            document.getElementById('loadingIndicator').style.display = 'none';
+            document.getElementById('calculateBtn').disabled = false;
             return;
         }
-        
-        // Send to API
-        const response = await fetch('/api.php?action=calculate', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(formData)
-        });
-        
-        const result = await response.json();
-        
-        if (!response.ok || !result.success) {
-            throw new Error(result.error || 'Calculation failed');
+
+        if (calculatorWorker) {
+            calculatorWorker.onmessage = function(e) {
+                const response = e.data;
+                
+                if (response.status === 'success') {
+                    displayResults(response.results);
+                } else {
+                    console.error('Calculation error:', response.message);
+                    showError('Error: ' + response.message);
+                }
+                
+                // Hide loading indicator
+                document.getElementById('loadingIndicator').style.display = 'none';
+                document.getElementById('calculateBtn').disabled = false;
+            };
+            
+            calculatorWorker.onerror = function(error) {
+                console.error('Worker error:', error);
+                showError('Calculation failed due to a script error.');
+                document.getElementById('loadingIndicator').style.display = 'none';
+                document.getElementById('calculateBtn').disabled = false;
+            };
+
+            calculatorWorker.postMessage(formData);
+        } else {
+            showError("Web Workers are not supported in this browser.");
+            document.getElementById('loadingIndicator').style.display = 'none';
+            document.getElementById('calculateBtn').disabled = false;
         }
-        
-        // Display results
-        displayResults(result.data);
         
     } catch (error) {
         console.error('Calculation error:', error);
         showError('Error: ' + error.message);
-    } finally {
-        // Hide loading indicator
         document.getElementById('loadingIndicator').style.display = 'none';
         document.getElementById('calculateBtn').disabled = false;
     }
 });
+
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+function saveToLocalStorage() {
+    const formData = collectFormData();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
+}
+
+function loadFromLocalStorage() {
+    const savedData = localStorage.getItem(STORAGE_KEY);
+    if (!savedData) return;
+
+    try {
+        const data = JSON.parse(savedData);
+        const form = document.getElementById('calculatorForm');
+
+        // Populate basic fields
+        for (const [key, value] of Object.entries(data)) {
+            if (key === 'income_sources') continue;
+            
+            // Handle percentages that were divided by 100 in collectFormData
+            if (['annual_fee_percentage', 'inflation_rate'].includes(key)) {
+                const input = form.querySelector(`[name="${key}"]`);
+                if (input) input.value = value * 100;
+                continue;
+            }
+
+            const input = form.querySelector(`[name="${key}"]`);
+            if (input) {
+                input.value = value;
+            }
+        }
+        
+        // Re-populate income sources
+        if (data.income_sources && Array.isArray(data.income_sources) && data.income_sources.length > 0) {
+            // Clear existing (though usually empty on load)
+            const container = document.getElementById('incomeSourcesContainer');
+            if (container) container.innerHTML = '';
+            
+            // Re-create sources
+            data.income_sources.forEach(source => {
+                // Ensure field names match what addIncomeSource expects
+                // data.income_sources comes from collectFormData, which has structure:
+                // { name, recipient, annual_amount, start_age, end_age, inflation_adjusted }
+                // addIncomeSource expects { source_name, recipient, annual_amount, start_age, end_age, is_inflation_adjusted }
+                // or just passes it through?
+                // Let's check app.js addIncomeSource again.
+                // const name = savedData?.source_name || '';
+                // It looks for source_name. But collectFormData provides 'name'.
+                
+                const mappedSource = {
+                    source_name: source.name,
+                    recipient: source.recipient,
+                    annual_amount: source.annual_amount,
+                    start_age: source.start_age,
+                    end_age: source.end_age,
+                    is_inflation_adjusted: source.inflation_adjusted
+                };
+                
+                if (window.addIncomeSource) {
+                    window.addIncomeSource(mappedSource);
+                }
+            });
+        } else {
+             // If no saved income sources, add default
+             if (window.addIncomeSource) {
+                 window.addIncomeSource();
+             }
+        }
+        
+        // Trigger allocation bar update
+        if (typeof updateAllocationBar === 'function') {
+            updateAllocationBar();
+        }
+
+    } catch (e) {
+        console.error("Error loading from local storage", e);
+        // Fallback: add default income source if something crashed
+        if (window.addIncomeSource && document.querySelectorAll('.income-source').length === 0) {
+            window.addIncomeSource();
+        }
+    }
+}
 
 // Collect form data
 function collectFormData() {

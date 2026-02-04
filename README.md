@@ -1,6 +1,6 @@
 # Risk-Based Guardrail Calculator
 
-A comprehensive PHP application implementing Kitce's Risk-Based Monte Carlo Probability of Success Guardrails for retirement distribution planning.
+A comprehensive client-side JavaScript application implementing Kitce's Risk-Based Monte Carlo Probability of Success Guardrails for retirement distribution planning.
 
 ## Overview
 
@@ -14,40 +14,67 @@ This application calculates retirement spending recommendations based on risk-ba
 
 ## Features
 
-- **Monte Carlo Simulation**: 10,000 iterations for probability of success calculation
-- **Risk-Based Guardrails**: Configurable upper/lower PoS thresholds
-- **Retirement Spending Smile**: Model realistic spending patterns over retirement
-- **Multiple Income Sources**: Social Security, pensions, and other income streams
-- **Historical Data Tracking**: Store and compare calculations over time
-- **Interactive Visualizations**: Charts showing Monte Carlo projections and guardrail status
-- **Portable Docker Environment**: Easy deployment and migration
-- **Auto-save Functionality**: Form inputs automatically saved as you type
+- **Client-Side Simulation**: 10,000 Monte Carlo iterations run locally in your browser using Web Workers.
+- **Risk-Based Guardrails**: Configurable upper/lower PoS thresholds.
+- **Retirement Spending Smile**: Model realistic spending patterns over retirement.
+- **Multiple Income Sources**: Social Security, pensions, and other income streams.
+- **Local Persistence**: Calculation inputs are automatically saved to your browser's Local Storage.
+- **Interactive Visualizations**: Charts showing Monte Carlo projections and guardrail status.
+- **Static Architecture**: No server-side processing or database required.
 
 ## Technology Stack
 
-- **PHP 8.2** with FPM
-- **Nginx** web server
-- **SQLite 3** database (lightweight, file-based)
-- **Docker Compose** for containerization
+- **Vanilla JavaScript** (ES6+)
+- **Web Workers** for background processing
 - **Chart.js** for visualizations
-- **Vanilla JavaScript** for frontend interactivity
+- **HTML5 & CSS3**
 
-## Installation
+## Installation & Usage
 
-### Prerequisites
+### Option 1: Docker (Recommended)
 
-- Docker and Docker Compose installed
-- Git
+Running with Docker ensures all browser security features working correctly (Web Workers, ES Modules).
 
-### Setup
+1.  Start the container:
+    ```bash
+    docker-compose up -d
+    ```
+2.  Open your browser to: [http://localhost:8080](http://localhost:8080)
 
-1. Clone the repository:
-   ```bash
-   git clone <repository-url>
-   cd guardrail-calculator
-   ```
+### Option 2: Local Static Server
 
-2. Build and start the Docker containers:
+If you have Python installed, you can run a simple server:
+```bash
+cd src/public
+python3 -m http.server 8080
+```
+Then open [http://localhost:8080](http://localhost:8080).
+
+### Note on File System Access
+Opening `src/public/index.html` directly (via `file://`) will likely fail in modern browsers due to security restrictions on Web Workers and ES Modules. Please use one of the HTTP server options above.
+
+### Hosting
+
+This is a static website. You can host it on:
+- GitHub Pages
+- Netlify
+- Vercel
+- Any standard web server (Apache, Nginx)
+
+### Development
+
+The core logic is located in `src/public/js/logic/`. The Web Worker `src/public/js/worker.js` handles the simulation execution.
+
+## Methodology
+
+Based on [Kitce's Risk-Based Guardrails](https://www.kitces.com/blog/risk-based-monte-carlo-probability-of-success-guardrails-retirement-distribution-hatchet/).
+
+The calculator performs 10,000 Monte Carlo simulations per run, projecting portfolio growth based on:
+- **Stocks**: 10% mean return, 20% std dev
+- **Bonds**: 5% mean return, 6% std dev
+- **Cash**: 3% mean return, 1% std dev
+- **Inflation**: 2.5% (default)
+
    ```bash
    docker-compose up -d --build
    ```

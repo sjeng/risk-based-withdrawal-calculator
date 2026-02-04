@@ -1,14 +1,10 @@
-<?php
-require_once __DIR__ . '/../utils/helpers.php';
-$config = require __DIR__ . '/../config/config.php';
-?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Risk-Based Guardrail Calculator | Kitce's Monte Carlo Method</title>
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -158,7 +154,7 @@ $config = require __DIR__ . '/../config/config.php';
                     <!-- Submit Button -->
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary" id="calculateBtn">
-                            🔬 Run Monte Carlo Simulation (10,000 iterations)
+                            🔬 Run Simulations (10,000 iterations)
                         </button>
                         <button type="button" class="btn btn-secondary" id="exportJsonBtn">
                             📋 Export Inputs as JSON
@@ -279,14 +275,13 @@ $config = require __DIR__ . '/../config/config.php';
                 Consult with a qualified financial advisor before making investment decisions.
             </p>
             <p class="footer-links">
-                <a href="/history.php">View Calculation History</a> | 
                 <a href="https://www.kitces.com/blog/risk-based-monte-carlo-probability-of-success-guardrails-retirement-distribution-hatchet/" target="_blank">Learn More About Risk-Based Guardrails</a>
             </p>
         </footer>
     </div>
 
-    <script src="/js/app.js"></script>
-    <script src="/js/calculator-form.js"></script>
-    <script src="/js/charts.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/calculator-form.js"></script>
+    <script src="js/charts.js"></script>
 </body>
 </html>
