@@ -22,18 +22,16 @@ Traditional guardrails often rely on Withdrawal Rates (e.g., "If withdrawal rate
 
 ## 2. Guardrail Thresholds
 
-We have implemented the specific "Hatchet" methodology thresholds recommended in the research to avoid "whipsawing" (making frequent, unnecessary adjustments).
+The calculator supports configurable guardrail thresholds. The UI defaults are set to **80% lower**, **95% upper**, and a **90% target**, and users can adjust them in the form.
 
-| Guardrail | Threshold | Application Logic | Meaning |
+If you want to align with the specific thresholds discussed in Kitces's research (70% lower, 99% upper), update the form values accordingly.
+
+| Guardrail | Default Threshold | Application Logic | Meaning |
 | :--- | :--- | :--- | :--- |
-| **Upper Guardrail** | **99% PoS** | **The Ratchet** | The portfolio is doing so well that there is essentially *zero* risk of failure. Spending can be increased (ratcheted up). |
-| **Safe Zone** | **70% - 99%** | **Maintain** | The plan is working. Even at 75% success, there is no need to panic. Volatility is normal. |
-| **Lower Guardrail** | **< 70% PoS** | **The Hatchet** | The risk of failure (30%+) has become too high. A "Hatchet" (spending cut) is required to restore safety. |
+| **Upper Guardrail** | **95% PoS** | **The Ratchet** | The portfolio is doing very well. Spending can be increased (ratcheted up). |
+| **Safe Zone** | **80% - 95%** | **Maintain** | The plan is working. Volatility is normal. |
+| **Lower Guardrail** | **< 80% PoS** | **The Hatchet** | The risk of failure becomes too high. A spending cut is required to restore safety. |
 | **Target** | **90% PoS** | **The Goal** | When a change is needed, we solve for the spending amount that restores confidence to this level. |
-
-### Why these specific numbers?
-*   **70% Lower Limit:** Traditional plans target 75-90% success. If markets drop, PoS falls. Kitces argues one should *not* cut spending immediately. Accessing the "safety margin" (70-90% range) is exactly what it's there for. You only cut when risk becomes "unacceptable" (below 70%).
-*   **99% Upper Limit:** Raising spending permanently is a risk. You should only do it when the plan is "bulletproof" (99% success).
 
 ---
 
@@ -59,7 +57,7 @@ This aligns with the principle: **"Solve for the spending level that would bring
 
 ## 4. The Retirement Spending Smile
 
-The application assumes spending does not match inflation perfectly every year. It uses the "Retirement Spending Smile" (modeled in `SpendingProfile.php`):
+The application assumes spending does not match inflation perfectly every year. It uses the "Retirement Spending Smile" (modeled in `docs/js/logic/SpendingProfile.js`):
 *   **Early Retirement:** High activity/spending.
 *   **Mid Retirement:** Gradual real-dollar decline (travel stops, activity slows).
 *   **Late Retirement:** Slight uptick for healthcare, but generally lower than active years.

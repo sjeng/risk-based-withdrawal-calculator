@@ -107,7 +107,6 @@ The calculator performs 10,000 Monte Carlo simulations per run, projecting portf
 risk-based-guardrail/
 ├── docker/                  # Docker configuration
 │   └── nginx/               # Nginx web server
-├── src/
 ├── docs/                    # Web-accessible files
 │   ├── index.html            # Main calculator interface
 │   ├── css/                  # Stylesheets
@@ -167,7 +166,7 @@ docker-compose logs -f
 
 ### Restart specific service
 ```bash
-docker-compose restart php
+docker-compose restart web
 ```
 
 ### Rebuild after code changes
