@@ -34,6 +34,12 @@ export const Config = {
         stocks_cash: 0.0,     // Uncorrelated
         bonds_cash: 0.2,      // Interest rate sensitivity
     },
+
+    enhanced_mc: {
+        default_autocorrelation: -0.10,  // Conservative mean-reversion estimate (Poterba & Summers 1988)
+        min_autocorrelation: -0.40,
+        max_autocorrelation: 0.0,
+    },
     
     defaults: {
         inflation_rate: 0.025,  // 2.5%

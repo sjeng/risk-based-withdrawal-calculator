@@ -233,8 +233,9 @@ function removeExpenseItem(id) {
 }
 
 // Display results
-function displayResults(results) {
+function displayResults(results, enhancedResults) {
     app.currentResults = results;
+    app.enhancedResults = enhancedResults || null;
     
     // Show results section
     document.getElementById('resultsSection').style.display = 'block';
@@ -290,8 +291,11 @@ function displayResults(results) {
     document.getElementById('statYear0NetWithdrawal').textContent = formatCurrency(results.income_impact.year0_net_withdrawal);
     document.getElementById('statDuration').textContent = mc.duration_ms + ' ms (MC simulation)';
     
+    // Enhanced MC comparison display
+    displayEnhancedResults(enhancedResults);
+    
     // Create charts
-    createProjectionChart(results);
+    createProjectionChart(results, enhancedResults);
     createCashflowChart(results);
     
     // Scroll to results with a small top offset so PoS stays visible
@@ -321,14 +325,45 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Shareable link button
     document.getElementById('shareLinkBtn').addEventListener('click', copyShareableLink);
+
+    // Advanced section toggle
+    const advancedToggle = document.getElementById('advancedToggle');
+    if (advancedToggle) {
+        advancedToggle.addEventListener('click', () => {
+            const content = document.getElementById('advancedContent');
+            const isExpanded = advancedToggle.getAttribute('aria-expanded') === 'true';
+            advancedToggle.setAttribute('aria-expanded', !isExpanded);
+            content.style.display = isExpanded ? 'none' : 'block';
+            advancedToggle.textContent = isExpanded
+                ? 'Advanced Simulation Options \u25b8'
+                : 'Advanced Simulation Options \u25be';
+        });
+    }
+
+    // Enhanced MC checkbox toggle
+    const enhancedCheckbox = document.getElementById('enhancedMcEnabled');
+    if (enhancedCheckbox) {
+        enhancedCheckbox.addEventListener('change', () => {
+            const optionsDiv = document.getElementById('enhancedMcOptions');
+            if (optionsDiv) {
+                optionsDiv.style.display = enhancedCheckbox.checked ? 'block' : 'none';
+            }
+            updateCalculateButtonLabel();
+        });
+    }
+
+    // Autocorrelation slider value display
+    const acSlider = document.getElementById('enhancedMcAutocorrelation');
+    const acSliderValue = document.getElementById('autocorrelationValue');
+    if (acSlider && acSliderValue) {
+        acSlider.addEventListener('input', () => {
+            acSliderValue.textContent = parseFloat(acSlider.value).toFixed(2);
+        });
+    }
     
-    // Add default income source if none exist (will be handled by loadFromLocalStorage in calculator-form.js usually, 
-    // but good to have a fallback if empty)
+    // Fallback handled by calculator-form.js
     if (document.querySelectorAll('.income-source').length === 0) {
-        // We wait a tick to let calculator-form.js loadFromLocalStorage run first?
-        // Actually calculator-form.js runs its DOMContentLoaded listener too.
-        // It's safer to let calculator-form.js handle the initial population.
-        // But if local storage is empty, we want a default one.
+        // Let calculator-form.js handle initial population
     }
 });
 
@@ -338,6 +373,87 @@ window.addIncomeSource = addIncomeSource;
 window.removeExpenseItem = removeExpenseItem;
 window.addExpenseItem = addExpenseItem;
 window.app = app;
+
+// Update the calculate button label based on enhanced MC toggle
+function updateCalculateButtonLabel() {
+    const btn = document.getElementById('calculateBtn');
+    const enhanced = document.getElementById('enhancedMcEnabled')?.checked;
+    if (btn) {
+        btn.textContent = enhanced
+            ? '\ud83d\udd2c Run Simulations (2\u00d7 10,000 iterations)'
+            : '\ud83d\udd2c Run Simulations (10,000 iterations)';
+    }
+}
+window.updateCalculateButtonLabel = updateCalculateButtonLabel;
+
+// Display enhanced MC comparison results
+function displayEnhancedResults(enhancedResults) {
+    const banner = document.getElementById('enhancedComparisonBanner');
+    const grid = document.getElementById('enhancedResultsGrid');
+    const statsSection = document.getElementById('enhancedStatsSection');
+
+    if (!enhancedResults) {
+        if (banner) banner.style.display = 'none';
+        if (grid) grid.style.display = 'none';
+        if (statsSection) statsSection.style.display = 'none';
+        return;
+    }
+
+    const standardPos = app.currentResults.probability_of_success;
+    const enhancedPos = enhancedResults.probability_of_success;
+    const posDiff = standardPos - enhancedPos;
+
+    // Comparison banner
+    if (banner) {
+        banner.style.display = 'block';
+        const summary = document.getElementById('comparisonSummary');
+        if (summary) {
+            let text = `Standard MC: ${formatPercentage(standardPos, 1)} PoS | Enhanced MC (Mean-Reverting): ${formatPercentage(enhancedPos, 1)} PoS`;
+            if (posDiff > 0.5) {
+                text += ` — The enhanced model suggests ${posDiff.toFixed(1)} percentage points lower probability of success, indicating the standard model may be slightly over-optimistic at this spending level.`;
+            } else if (posDiff < -0.5) {
+                text += ` — The enhanced model suggests ${Math.abs(posDiff).toFixed(1)} percentage points higher probability of success.`;
+            } else {
+                text += ` — Both models are in close agreement at this spending level.`;
+            }
+            summary.textContent = text;
+        }
+    }
+
+    // Enhanced results grid
+    if (grid) {
+        grid.style.display = 'grid';
+
+        document.getElementById('enhancedPosResult').textContent = formatPercentage(enhancedPos, 1);
+        document.getElementById('enhancedRecommendedResult').textContent = formatCurrency(enhancedResults.recommended_spending);
+
+        const adjustmentMap = {
+            'increase': '\u2191 Increase',
+            'maintain': '\u2192 Maintain',
+            'decrease': '\u2193 Decrease'
+        };
+        const adjText = adjustmentMap[enhancedResults.spending_adjustment_needed] || '--';
+        const changeAmount = enhancedResults.spending_change_amount;
+        const changeText = changeAmount !== 0 ? ` (${changeAmount > 0 ? '+' : ''}${formatCurrency(changeAmount)})` : '';
+        document.getElementById('enhancedAdjustmentResult').textContent = adjText + changeText;
+
+        const phi = enhancedResults.enhanced_mc_autocorrelation;
+        document.getElementById('enhancedAutocorrelationResult').textContent = phi != null ? phi.toFixed(2) : '--';
+    }
+
+    // Enhanced statistics
+    if (statsSection) {
+        statsSection.style.display = 'block';
+        const emc = enhancedResults.monte_carlo;
+        document.getElementById('statEnhancedIterations').textContent = emc.iterations.toLocaleString();
+        document.getElementById('statEnhancedSuccessful').textContent = emc.successful.toLocaleString();
+        document.getElementById('statEnhancedFailed').textContent = emc.failed.toLocaleString();
+        document.getElementById('statEnhancedMedian').textContent = formatCurrency(emc.percentiles.p50);
+        document.getElementById('statEnhancedP10').textContent = formatCurrency(emc.percentiles.p10);
+        document.getElementById('statEnhancedP90').textContent = formatCurrency(emc.percentiles.p90);
+        document.getElementById('statEnhancedDuration').textContent = enhancedResults.calculation_duration_ms + ' ms';
+    }
+}
 
 // Copy shareable link
 function copyShareableLink() {

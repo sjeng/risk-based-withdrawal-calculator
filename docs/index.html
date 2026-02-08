@@ -154,6 +154,54 @@
                         <small>When guardrails are breached, spending will be adjusted by this percentage</small>
                     </fieldset>
 
+                    <!-- Advanced Simulation Options -->
+                    <fieldset class="advanced-fieldset">
+                        <legend>
+                            <button type="button" class="legend-toggle" id="advancedToggle" aria-expanded="false" aria-controls="advancedContent">
+                                Advanced Simulation Options ▸
+                            </button>
+                        </legend>
+                        <div id="advancedContent" class="advanced-content" style="display: none;">
+                            <div class="info-box">
+                                <p>
+                                    <strong>Why Enhanced Monte Carlo?</strong>
+                                    Standard Monte Carlo assumes each year's return is independent. However, 
+                                    <a href="https://www.kitces.com/blog/monte-carlo-simulation-historical-returns-sequence-risk-calculate-sustainable-spending-levels/" target="_blank">research by Kitces, Fitzpatrick & Tharp</a> 
+                                    shows that this can overstate sustainable spending by 5–10% at typical confidence levels (70–90% probability of success), because 
+                                    real markets exhibit mean reversion — prolonged downturns are historically followed by recoveries, and vice versa.
+                                </p>
+                                <p style="margin-top: 8px;">
+                                    Enhanced mode runs a second simulation using log-normal returns with mean reversion and displays both results side-by-side for comparison.
+                                </p>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="checkbox-label" for="enhancedMcEnabled">
+                                        <input type="checkbox" id="enhancedMcEnabled" name="enhanced_mc_enabled" value="true">
+                                        <span>Enable Enhanced Monte Carlo Comparison</span>
+                                    </label>
+                                    <small>Runs a second simulation with mean-reverting returns alongside the standard one</small>
+                                </div>
+                            </div>
+                            <div id="enhancedMcOptions" style="display: none;">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="enhancedMcAutocorrelation">Mean Reversion Strength</label>
+                                        <div class="range-with-value">
+                                            <input type="range" id="enhancedMcAutocorrelation" name="enhanced_mc_autocorrelation" 
+                                                   min="-0.40" max="0" step="0.01" value="-0.10">
+                                            <span id="autocorrelationValue" class="range-value">-0.10</span>
+                                        </div>
+                                        <small>
+                                            Autocorrelation coefficient (φ). More negative = stronger mean reversion. 
+                                            Default -0.10 is a conservative empirical estimate. Set to 0 for log-normal returns with no mean reversion.
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </fieldset>
+
                     <!-- Submit Button -->
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary" id="calculateBtn">
@@ -177,6 +225,12 @@
                 
                 <!-- Main Results -->
                 <div class="results-summary">
+                    <!-- Enhanced MC Comparison Banner (hidden by default) -->
+                    <div id="enhancedComparisonBanner" class="comparison-banner" style="display: none;">
+                        <h3>📊 Standard vs. Enhanced Monte Carlo Comparison</h3>
+                        <p id="comparisonSummary"></p>
+                    </div>
+
                     <div class="result-primary">
                         <div class="pos-gauge">
                             <div class="pos-value" id="posValue">--</div>
@@ -203,6 +257,29 @@
                         <div class="result-item">
                             <div class="result-label">Current Withdrawal Rate</div>
                             <div class="result-value" id="withdrawalRateResult">--</div>
+                        </div>
+                    </div>
+
+                    <!-- Enhanced MC Results Grid (hidden by default) -->
+                    <div id="enhancedResultsGrid" class="result-grid enhanced-results-grid" style="display: none;">
+                        <div class="enhanced-results-header">
+                            <h4>Enhanced Monte Carlo (Mean-Reverting)</h4>
+                        </div>
+                        <div class="result-item">
+                            <div class="result-label">Enhanced PoS</div>
+                            <div class="result-value" id="enhancedPosResult">--</div>
+                        </div>
+                        <div class="result-item">
+                            <div class="result-label">Enhanced Recommended Spending</div>
+                            <div class="result-value" id="enhancedRecommendedResult">--</div>
+                        </div>
+                        <div class="result-item">
+                            <div class="result-label">Enhanced Adjustment</div>
+                            <div class="result-value" id="enhancedAdjustmentResult">--</div>
+                        </div>
+                        <div class="result-item">
+                            <div class="result-label">Mean Reversion (φ)</div>
+                            <div class="result-value" id="enhancedAutocorrelationResult">--</div>
                         </div>
                     </div>
                 </div>
@@ -276,6 +353,41 @@
                         <div class="stat-item">
                             <span class="stat-label">Calculation Time:</span>
                             <span class="stat-value" id="statDuration">--</span>
+                        </div>
+                    </div>
+
+                    <!-- Enhanced MC Statistics (hidden by default) -->
+                    <div id="enhancedStatsSection" style="display: none;">
+                        <h4 style="margin-top: 20px; color: var(--text-heading);">Enhanced Monte Carlo Statistics</h4>
+                        <div class="stats-grid" style="margin-top: 10px;">
+                            <div class="stat-item">
+                                <span class="stat-label">Enhanced Iterations:</span>
+                                <span class="stat-value" id="statEnhancedIterations">--</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Enhanced Successful:</span>
+                                <span class="stat-value" id="statEnhancedSuccessful">--</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Enhanced Failed:</span>
+                                <span class="stat-value" id="statEnhancedFailed">--</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Enhanced Median Final:</span>
+                                <span class="stat-value" id="statEnhancedMedian">--</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Enhanced 10th Percentile:</span>
+                                <span class="stat-value" id="statEnhancedP10">--</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Enhanced 90th Percentile:</span>
+                                <span class="stat-value" id="statEnhancedP90">--</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Enhanced Calc Time:</span>
+                                <span class="stat-value" id="statEnhancedDuration">--</span>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -587,3 +587,121 @@ legend {
         padding: 20px;
     }
 }
+
+/* Advanced Simulation Options */
+.advanced-fieldset {
+    border-style: dashed;
+}
+
+.legend-toggle {
+    background: none;
+    border: none;
+    font-weight: 600;
+    color: var(--text-label);
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 0;
+    font-family: inherit;
+}
+
+.legend-toggle:hover {
+    color: var(--primary-color);
+}
+
+.advanced-content {
+    padding-top: 10px;
+}
+
+.info-box {
+    background: var(--box-info-bg);
+    border-left: 4px solid var(--primary-color);
+    padding: 15px 18px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: var(--text-main);
+}
+
+.info-box a {
+    color: var(--primary-color);
+    text-decoration: underline;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-weight: 500;
+    color: var(--text-label);
+    font-size: 0.95rem;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary-color);
+    cursor: pointer;
+}
+
+.range-with-value {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.range-with-value input[type="range"] {
+    flex: 1;
+    accent-color: var(--primary-color);
+    height: 6px;
+}
+
+.range-value {
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--text-heading);
+    min-width: 50px;
+    text-align: center;
+    background: var(--bg-panel);
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+}
+
+/* Enhanced MC Comparison Results */
+.comparison-banner {
+    background: var(--box-info-bg);
+    border: 1px solid var(--primary-color);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.comparison-banner h3 {
+    color: var(--primary-color);
+    margin-bottom: 8px;
+    font-size: 1.1rem;
+}
+
+.comparison-banner p {
+    color: var(--text-main);
+    line-height: 1.6;
+    font-size: 0.95rem;
+}
+
+.enhanced-results-grid {
+    border-top: 2px dashed var(--border-color);
+    padding-top: 20px;
+    margin-top: 10px;
+}
+
+.enhanced-results-header {
+    grid-column: 1 / -1;
+}
+
+.enhanced-results-header h4 {
+    color: var(--primary-color);
+    font-size: 1.05rem;
+    margin-bottom: 5px;
+}

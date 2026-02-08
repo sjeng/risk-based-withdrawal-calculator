@@ -14,7 +14,7 @@ function updateChartDefaults() {
 }
 
 // Create projection chart (Monte Carlo fan chart)
-function createProjectionChart(results) {
+function createProjectionChart(results, enhancedResults) {
     updateChartDefaults();
     const ctx = document.getElementById('projectionChart');
     
@@ -27,62 +27,101 @@ function createProjectionChart(results) {
     
     const labels = yearlyData.map(d => `Year ${d.year}`);
     const ages = yearlyData.map(d => d.age);
+
+    const datasets = [
+        {
+            label: '90th Percentile',
+            data: yearlyData.map(d => d.p90),
+            borderColor: 'rgba(34, 197, 94, 0.8)',
+            backgroundColor: 'rgba(34, 197, 94, 0.1)',
+            fill: '+1',
+            borderWidth: 2,
+            pointRadius: 0,
+            tension: 0.4
+        },
+        {
+            label: '75th Percentile',
+            data: yearlyData.map(d => d.p75),
+            borderColor: 'rgba(59, 130, 246, 0.6)',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            fill: '+1',
+            borderWidth: 1,
+            pointRadius: 0,
+            tension: 0.4
+        },
+        {
+            label: 'Median (50th)',
+            data: yearlyData.map(d => d.p50),
+            borderColor: 'rgba(99, 102, 241, 1)',
+            backgroundColor: 'transparent',
+            borderWidth: 3,
+            pointRadius: 0,
+            tension: 0.4
+        },
+        {
+            label: '25th Percentile',
+            data: yearlyData.map(d => d.p25),
+            borderColor: 'rgba(59, 130, 246, 0.6)',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            fill: '+1',
+            borderWidth: 1,
+            pointRadius: 0,
+            tension: 0.4
+        },
+        {
+            label: '10th Percentile',
+            data: yearlyData.map(d => d.p10),
+            borderColor: 'rgba(239, 68, 68, 0.8)',
+            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+            fill: false,
+            borderWidth: 2,
+            pointRadius: 0,
+            tension: 0.4
+        }
+    ];
+
+    // Add enhanced MC overlay if available
+    if (enhancedResults && enhancedResults.monte_carlo && enhancedResults.monte_carlo.yearly_percentiles) {
+        const enhancedData = enhancedResults.monte_carlo.yearly_percentiles;
+        datasets.push(
+            {
+                label: 'Enhanced Median (50th)',
+                data: enhancedData.map(d => d.p50),
+                borderColor: 'rgba(251, 146, 60, 1)',
+                backgroundColor: 'transparent',
+                borderWidth: 3,
+                borderDash: [8, 4],
+                pointRadius: 0,
+                tension: 0.4
+            },
+            {
+                label: 'Enhanced 10th Percentile',
+                data: enhancedData.map(d => d.p10),
+                borderColor: 'rgba(251, 146, 60, 0.6)',
+                backgroundColor: 'transparent',
+                borderWidth: 2,
+                borderDash: [4, 4],
+                pointRadius: 0,
+                tension: 0.4
+            },
+            {
+                label: 'Enhanced 90th Percentile',
+                data: enhancedData.map(d => d.p90),
+                borderColor: 'rgba(251, 146, 60, 0.6)',
+                backgroundColor: 'transparent',
+                borderWidth: 2,
+                borderDash: [4, 4],
+                pointRadius: 0,
+                tension: 0.4
+            }
+        );
+    }
     
     app.charts.projection = new Chart(ctx, {
         type: 'line',
         data: {
             labels: labels,
-            datasets: [
-                {
-                    label: '90th Percentile',
-                    data: yearlyData.map(d => d.p90),
-                    borderColor: 'rgba(34, 197, 94, 0.8)',
-                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
-                    fill: '+1',
-                    borderWidth: 2,
-                    pointRadius: 0,
-                    tension: 0.4
-                },
-                {
-                    label: '75th Percentile',
-                    data: yearlyData.map(d => d.p75),
-                    borderColor: 'rgba(59, 130, 246, 0.6)',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                    fill: '+1',
-                    borderWidth: 1,
-                    pointRadius: 0,
-                    tension: 0.4
-                },
-                {
-                    label: 'Median (50th)',
-                    data: yearlyData.map(d => d.p50),
-                    borderColor: 'rgba(99, 102, 241, 1)',
-                    backgroundColor: 'transparent',
-                    borderWidth: 3,
-                    pointRadius: 0,
-                    tension: 0.4
-                },
-                {
-                    label: '25th Percentile',
-                    data: yearlyData.map(d => d.p25),
-                    borderColor: 'rgba(59, 130, 246, 0.6)',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                    fill: '+1',
-                    borderWidth: 1,
-                    pointRadius: 0,
-                    tension: 0.4
-                },
-                {
-                    label: '10th Percentile',
-                    data: yearlyData.map(d => d.p10),
-                    borderColor: 'rgba(239, 68, 68, 0.8)',
-                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                    fill: false,
-                    borderWidth: 2,
-                    pointRadius: 0,
-                    tension: 0.4
-                }
-            ]
+            datasets: datasets
         },
         options: {
             responsive: true,

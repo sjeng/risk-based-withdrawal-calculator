@@ -31,7 +31,9 @@ const QUERY_PARAM_MAP = {
     spending_profile_type: 'sp',
     lower_guardrail: 'lg',
     upper_guardrail: 'ug',
-    spending_adjustment_percentage: 'adj'
+    spending_adjustment_percentage: 'adj',
+    enhanced_mc_enabled: 'em',
+    enhanced_mc_autocorrelation: 'ea'
 };
 
 const INCOME_PARAM_MAP = {
@@ -122,7 +124,7 @@ document.getElementById('calculatorForm').addEventListener('submit', async funct
                 const response = e.data;
                 
                 if (response.status === 'success') {
-                    displayResults(response.results);
+                    displayResults(response.results, response.enhancedResults);
                 } else {
                     console.error('Calculation error:', response.message);
                     showError('Error: ' + response.message);
@@ -272,7 +274,7 @@ function base64UrlDecode(value) {
 
 function shouldIncludeValue(element) {
     if (element.type === 'checkbox') {
-        return element.checked !== element.defaultChecked;
+        return element.checked;
     }
 
     if (element.type === 'radio') {
@@ -304,6 +306,29 @@ function loadFromLocalStorage() {
             if (['annual_fee_percentage', 'inflation_rate'].includes(key)) {
                 const input = form.querySelector(`[name="${key}"]`);
                 if (input) input.value = value * 100;
+                continue;
+            }
+
+            // Handle enhanced MC checkbox
+            if (key === 'enhanced_mc_enabled') {
+                const checkbox = document.getElementById('enhancedMcEnabled');
+                if (checkbox) {
+                    checkbox.checked = Boolean(value);
+                    const optionsDiv = document.getElementById('enhancedMcOptions');
+                    if (optionsDiv) optionsDiv.style.display = value ? 'block' : 'none';
+                    updateCalculateButtonLabel();
+                }
+                continue;
+            }
+
+            // Handle enhanced MC autocorrelation
+            if (key === 'enhanced_mc_autocorrelation') {
+                const slider = document.getElementById('enhancedMcAutocorrelation');
+                if (slider) {
+                    slider.value = value;
+                    const display = document.getElementById('autocorrelationValue');
+                    if (display) display.textContent = parseFloat(value).toFixed(2);
+                }
                 continue;
             }
 
@@ -488,9 +513,36 @@ function loadFromQueryParams() {
     }
 
     for (const [key, value] of resolvedEntries) {
+        // Handle checkbox for enhanced MC
+        if (key === 'enhanced_mc_enabled') {
+            const checkbox = document.getElementById('enhancedMcEnabled');
+            if (checkbox) {
+                checkbox.checked = value === 'true' || value === true;
+                const optionsDiv = document.getElementById('enhancedMcOptions');
+                if (optionsDiv) optionsDiv.style.display = checkbox.checked ? 'block' : 'none';
+                // Expand the advanced section if enhanced MC is enabled
+                if (checkbox.checked) {
+                    const advContent = document.getElementById('advancedContent');
+                    const advToggle = document.getElementById('advancedToggle');
+                    if (advContent) advContent.style.display = 'block';
+                    if (advToggle) {
+                        advToggle.setAttribute('aria-expanded', 'true');
+                        advToggle.textContent = 'Advanced Simulation Options \u25be';
+                    }
+                }
+                updateCalculateButtonLabel();
+            }
+            continue;
+        }
+
         const input = form.querySelector(`[name="${CSS.escape(key)}"]`);
         if (input) {
             input.value = value;
+            // Update autocorrelation display span if this is the slider
+            if (key === 'enhanced_mc_autocorrelation') {
+                const display = document.getElementById('autocorrelationValue');
+                if (display) display.textContent = parseFloat(value).toFixed(2);
+            }
         }
     }
 
@@ -534,6 +586,8 @@ function collectFormData() {
         upper_guardrail: parseFloat(formData.get('upper_guardrail')),
         spending_adjustment_percentage: parseFloat(formData.get('spending_adjustment_percentage')),
         monte_carlo_iterations: 10000,
+        enhanced_mc_enabled: document.getElementById('enhancedMcEnabled')?.checked || false,
+        enhanced_mc_autocorrelation: parseFloat(document.getElementById('enhancedMcAutocorrelation')?.value) || -0.10,
     };
     
     // Collect income sources
