@@ -8,8 +8,7 @@ export class GuardrailCalculator {
     constructor(
         lowerGuardrailPos = null,
         upperGuardrailPos = null,
-        targetPos = null,
-        spendingAdjustmentPercentage = null
+        targetPos = null
     ) {
         this.config = Config;
 
@@ -17,7 +16,6 @@ export class GuardrailCalculator {
         this.lowerGuardrailPos = lowerGuardrailPos ?? this.config.guardrails.default_lower;
         this.upperGuardrailPos = upperGuardrailPos ?? this.config.guardrails.default_upper;
         this.targetPos = targetPos ?? this.config.guardrails.default_target;
-        this.spendingAdjustmentPercentage = spendingAdjustmentPercentage ?? this.config.guardrails.default_adjustment;
 
         this.validateGuardrails();
     }
@@ -443,7 +441,7 @@ export class GuardrailCalculator {
     applyGuardrailsFromParams(params) {
         const lower = params.lower_guardrail;
         const upper = params.upper_guardrail;
-        const adjustment = params.spending_adjustment_percentage;
+        const target = params.target_guardrail;
 
         if (typeof lower === 'number' && !Number.isNaN(lower)) {
             this.lowerGuardrailPos = lower;
@@ -453,8 +451,8 @@ export class GuardrailCalculator {
             this.upperGuardrailPos = upper;
         }
 
-        if (typeof adjustment === 'number' && !Number.isNaN(adjustment)) {
-            this.spendingAdjustmentPercentage = adjustment;
+        if (typeof target === 'number' && !Number.isNaN(target)) {
+            this.targetPos = target;
         }
 
         this.validateGuardrails();

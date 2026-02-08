@@ -9,7 +9,6 @@ export const Config = {
         default_lower: 80.0,
         default_upper: 95.0,
         default_target: 90.0,
-        default_adjustment: 10.0,
         min_lower: 1.0,
         max_upper: 99.0,
     },

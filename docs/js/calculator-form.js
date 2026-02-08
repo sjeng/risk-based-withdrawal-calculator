@@ -31,7 +31,7 @@ const QUERY_PARAM_MAP = {
     spending_profile_type: 'sp',
     lower_guardrail: 'lg',
     upper_guardrail: 'ug',
-    spending_adjustment_percentage: 'adj',
+    target_guardrail: 'tg',
     enhanced_mc_enabled: 'em',
     enhanced_mc_autocorrelation: 'ea'
 };
@@ -296,6 +296,10 @@ function loadFromLocalStorage() {
 
     try {
         const data = JSON.parse(savedData);
+        if (data.target_guardrail === undefined && typeof data.spending_adjustment_percentage === 'number') {
+            data.target_guardrail = data.spending_adjustment_percentage;
+            delete data.spending_adjustment_percentage;
+        }
         const form = document.getElementById('calculatorForm');
 
         // Populate basic fields
@@ -438,6 +442,11 @@ function loadFromQueryParams() {
     const decodedState = decodeState(stateParam);
     if (!decodedState || typeof decodedState !== 'object') {
         return false;
+    }
+
+    if (decodedState.tg === undefined && decodedState.adj !== undefined) {
+        decodedState.tg = decodedState.adj;
+        delete decodedState.adj;
     }
 
     const resolvedEntries = [];
@@ -593,7 +602,7 @@ function collectFormData() {
         spending_profile_type: formData.get('spending_profile_type'),
         lower_guardrail: parseFloat(formData.get('lower_guardrail')),
         upper_guardrail: parseFloat(formData.get('upper_guardrail')),
-        spending_adjustment_percentage: parseFloat(formData.get('spending_adjustment_percentage')),
+        target_guardrail: parseFloat(formData.get('target_guardrail')),
         monte_carlo_iterations: 10000,
         enhanced_mc_enabled: document.getElementById('enhancedMcEnabled')?.checked || false,
         enhanced_mc_autocorrelation: parseFloat(document.getElementById('enhancedMcAutocorrelation')?.value) || -0.10,
@@ -727,6 +736,18 @@ function validateFormData(data) {
         return {
             valid: false,
             message: 'Lower guardrail must be less than upper guardrail'
+        };
+    }
+
+    if (data.target_guardrail <= data.lower_guardrail || data.target_guardrail >= data.upper_guardrail) {
+        showFieldError('targetGuardrail', 'Must be between lower and upper guardrails');
+        if (!firstInvalidFieldId) {
+            firstInvalidFieldId = 'targetGuardrail';
+        }
+        scrollToField(firstInvalidFieldId);
+        return {
+            valid: false,
+            message: 'Target PoS must be between the lower and upper guardrails'
         };
     }
 
