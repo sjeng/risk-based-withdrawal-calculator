@@ -632,6 +632,7 @@ legend {
     font-size: 0.9rem;
     color: var(--text-secondary);
     flex-shrink: 0;
+    margin-top: 24px;
 }
 
 .footer p {

@@ -264,12 +264,14 @@ function removeExpenseItem(id) {
 function displayResults(results, enhancedResults) {
     app.currentResults = results;
     app.enhancedResults = enhancedResults || null;
+
+    const primaryResults = enhancedResults || results;
     
     // Show results section
     document.getElementById('resultsSection').style.display = 'block';
     
     // Probability of Success
-    document.getElementById('posValue').textContent = formatPercentage(results.probability_of_success, 1);
+    document.getElementById('posValue').textContent = formatPercentage(primaryResults.probability_of_success, 1);
     
     // Guardrail Status
     const statusBadge = document.getElementById('statusBadge');
@@ -279,13 +281,13 @@ function displayResults(results, enhancedResults) {
         'below_lower': { text: 'Below Lower Guardrail (Risk)', class: 'status-below' }
     };
     
-    const status = statusMap[results.guardrail_status] || { text: 'Unknown', class: '' };
+    const status = statusMap[primaryResults.guardrail_status] || { text: 'Unknown', class: '' };
     statusBadge.textContent = status.text;
     statusBadge.className = 'status-badge ' + status.class;
     
     // Spending values
-    document.getElementById('desiredSpendingResult').textContent = formatCurrency(results.desired_spending);
-    document.getElementById('recommendedSpendingResult').textContent = formatCurrency(results.recommended_spending);
+    document.getElementById('desiredSpendingResult').textContent = formatCurrency(primaryResults.desired_spending);
+    document.getElementById('recommendedSpendingResult').textContent = formatCurrency(primaryResults.recommended_spending);
     
     // Adjustment needed
     const adjustmentMap = {
@@ -293,16 +295,16 @@ function displayResults(results, enhancedResults) {
         'maintain': '→ Maintain',
         'decrease': '↓ Decrease'
     };
-    const adjustmentText = adjustmentMap[results.spending_adjustment_needed] || '--';
-    const changeAmount = results.spending_change_amount;
+    const adjustmentText = adjustmentMap[primaryResults.spending_adjustment_needed] || '--';
+    const changeAmount = primaryResults.spending_change_amount;
     const changeText = changeAmount !== 0 ? ` (${changeAmount > 0 ? '+' : ''}${formatCurrency(changeAmount)})` : '';
     document.getElementById('adjustmentResult').textContent = adjustmentText + changeText;
     
     // Withdrawal rate
-    document.getElementById('withdrawalRateResult').textContent = formatPercentage(results.current_withdrawal_rate);
+    document.getElementById('withdrawalRateResult').textContent = formatPercentage(primaryResults.current_withdrawal_rate);
     
     // Interpretation
-    document.getElementById('interpretationText').textContent = results.interpretation;
+    document.getElementById('interpretationText').textContent = primaryResults.interpretation;
     
     // Statistics
     const mc = results.monte_carlo;
@@ -428,7 +430,8 @@ function displayEnhancedResults(enhancedResults) {
         return;
     }
 
-    const standardPos = app.currentResults.probability_of_success;
+    const standardResults = app.currentResults;
+    const standardPos = standardResults.probability_of_success;
     const enhancedPos = enhancedResults.probability_of_success;
     const posDiff = standardPos - enhancedPos;
 
@@ -453,21 +456,32 @@ function displayEnhancedResults(enhancedResults) {
     if (grid) {
         grid.style.display = 'grid';
 
-        document.getElementById('enhancedPosResult').textContent = formatPercentage(enhancedPos, 1);
-        document.getElementById('enhancedRecommendedResult').textContent = formatCurrency(enhancedResults.recommended_spending);
+        const gridTitle = document.getElementById('comparisonGridTitle');
+        const posLabel = document.getElementById('comparisonPosLabel');
+        const spendingLabel = document.getElementById('comparisonSpendingLabel');
+        const adjustmentLabel = document.getElementById('comparisonAdjustmentLabel');
+        const fourthLabel = document.getElementById('comparisonFourthLabel');
+
+        if (gridTitle) gridTitle.textContent = 'Standard Monte Carlo (Baseline)';
+        if (posLabel) posLabel.textContent = 'Standard PoS';
+        if (spendingLabel) spendingLabel.textContent = 'Standard Recommended Spending';
+        if (adjustmentLabel) adjustmentLabel.textContent = 'Standard Adjustment';
+        if (fourthLabel) fourthLabel.textContent = 'Standard Withdrawal Rate';
+
+        document.getElementById('enhancedPosResult').textContent = formatPercentage(standardPos, 1);
+        document.getElementById('enhancedRecommendedResult').textContent = formatCurrency(standardResults.recommended_spending);
 
         const adjustmentMap = {
             'increase': '\u2191 Increase',
             'maintain': '\u2192 Maintain',
             'decrease': '\u2193 Decrease'
         };
-        const adjText = adjustmentMap[enhancedResults.spending_adjustment_needed] || '--';
-        const changeAmount = enhancedResults.spending_change_amount;
+        const adjText = adjustmentMap[standardResults.spending_adjustment_needed] || '--';
+        const changeAmount = standardResults.spending_change_amount;
         const changeText = changeAmount !== 0 ? ` (${changeAmount > 0 ? '+' : ''}${formatCurrency(changeAmount)})` : '';
         document.getElementById('enhancedAdjustmentResult').textContent = adjText + changeText;
 
-        const phi = enhancedResults.enhanced_mc_autocorrelation;
-        document.getElementById('enhancedAutocorrelationResult').textContent = phi != null ? phi.toFixed(2) : '--';
+        document.getElementById('enhancedAutocorrelationResult').textContent = formatPercentage(standardResults.current_withdrawal_rate);
     }
 
     // Enhanced statistics
