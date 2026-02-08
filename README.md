@@ -17,6 +17,7 @@ This application calculates retirement spending recommendations based on risk-ba
 - **Client-Side Simulation**: 10,000 Monte Carlo iterations run locally in your browser using Web Workers.
 - **Risk-Based Guardrails**: Configurable upper/lower PoS thresholds.
 - **Retirement Spending Smile**: Model realistic spending patterns over retirement.
+- **Enhanced Monte Carlo (Optional)**: Runs a second simulation with mean-reverting returns to compare against standard MC.
 - **Multiple Income Sources**: Social Security, pensions, and other income streams.
 - **Local Persistence**: Calculation inputs are automatically saved to your browser's Local Storage.
 - **Shareable Links**: Inputs are encoded into a compact `state` query param for easy sharing.
@@ -75,6 +76,10 @@ The calculator performs 10,000 Monte Carlo simulations per run, projecting portf
 - **Bonds**: 5% mean return, 6% std dev
 - **Cash**: 3% mean return, 1% std dev
 - **Inflation**: 2.5% (default)
+
+### Enhanced Monte Carlo (Optional)
+
+Enhanced mode runs a second simulation using log-normal returns with AR(1) mean reversion. This helps model sequence effects more conservatively by allowing downturns to be followed by recoveries and vice versa. Results are shown side-by-side with the standard MC run for comparison.
 
 ## Usage
 

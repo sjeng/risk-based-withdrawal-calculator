@@ -26,10 +26,11 @@ export class MonteCarloSimulation {
         bondAllocation,
         cashAllocation,
         annualFeePercentage = 0.0075,
-        iterations = 10000
+        iterations = 10000,
+        returnGenerator = null
     ) {
         this.config = Config;
-        this.returnGenerator = new ReturnGenerator();
+        this.returnGenerator = returnGenerator || new ReturnGenerator();
         this.cashFlowModel = cashFlowModel;
 
         this.currentPortfolioValue = currentPortfolioValue;
@@ -102,6 +103,11 @@ export class MonteCarloSimulation {
     }
 
     runSingleIteration() {
+        // Reset return generator state (clears AR(1) memory for enhanced mode)
+        if (typeof this.returnGenerator.reset === 'function') {
+            this.returnGenerator.reset();
+        }
+
         let portfolioValue = this.currentPortfolioValue;
         const yearlyValues = [];
         let success = true;

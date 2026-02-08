@@ -2,6 +2,7 @@ import { Config } from './Config.js';
 import { SpendingProfile } from './SpendingProfile.js';
 import { CashFlowModel } from './CashFlowModel.js';
 import { MonteCarloSimulation } from './MonteCarloSimulation.js';
+import { EnhancedReturnGenerator } from './EnhancedReturnGenerator.js';
 
 export class GuardrailCalculator {
     constructor(
@@ -188,7 +189,7 @@ export class GuardrailCalculator {
         return timeline;
     }
 
-    createSimulation(params, cashFlowModel, spending, currentAge, iterations = null) {
+    createSimulation(params, cashFlowModel, spending, currentAge, iterations = null, returnGenerator = null) {
         return new MonteCarloSimulation(
             cashFlowModel,
             params.current_portfolio_value,
@@ -200,8 +201,169 @@ export class GuardrailCalculator {
             params.bond_allocation,
             params.cash_allocation,
             params.annual_fee_percentage,
-            iterations ?? params.monte_carlo_iterations
+            iterations ?? params.monte_carlo_iterations,
+            returnGenerator
         );
+    }
+
+    /**
+     * Run the enhanced Monte Carlo simulation using log-normal returns with
+     * AR(1) mean reversion. Returns results in the same shape as calculate().
+     */
+    calculateEnhanced(params) {
+        const startTime = performance.now();
+
+        this.validateParams(params);
+        this.applyGuardrailsFromParams(params);
+
+        const spendingProfile = this.createSpendingProfile(params);
+
+        const cashFlowModel = new CashFlowModel(
+            spendingProfile,
+            params.inflation_rate
+        );
+
+        if (params.income_sources && Array.isArray(params.income_sources)) {
+            for (const source of params.income_sources) {
+                cashFlowModel.addIncomeSource(
+                    source.name,
+                    parseFloat(source.annual_amount),
+                    parseInt(source.start_age),
+                    source.end_age ? parseInt(source.end_age) : null,
+                    source.inflation_adjusted ?? true
+                );
+            }
+        }
+
+        if (params.future_expenses && Array.isArray(params.future_expenses)) {
+            for (const item of params.future_expenses) {
+                cashFlowModel.addExpenseItem(
+                    item.name,
+                    parseFloat(item.annual_amount),
+                    parseInt(item.start_age),
+                    item.end_age != null ? parseInt(item.end_age) : null,
+                    item.inflation_adjusted ?? true,
+                    item.one_time ?? false
+                );
+            }
+        }
+
+        const currentAge = params.spouse1_age ?? params.current_age;
+        const autocorrelation = params.enhanced_mc_autocorrelation ??
+            this.config.enhanced_mc?.default_autocorrelation ?? -0.10;
+        const enhancedGen = new EnhancedReturnGenerator(autocorrelation);
+
+        const simulation = this.createSimulation(
+            params, cashFlowModel, params.desired_spending, currentAge, null, enhancedGen
+        );
+        const mcResults = simulation.runSimulation();
+
+        const probabilityOfSuccess = mcResults.probability_of_success;
+        const guardrailStatus = this.determineGuardrailStatus(probabilityOfSuccess);
+        const spendingAdjustment = this.determineSpendingAdjustment(guardrailStatus);
+
+        let recommendedSpending;
+
+        if (spendingAdjustment === 'maintain') {
+            recommendedSpending = params.desired_spending;
+        } else {
+            recommendedSpending = this.findSpendingForTargetPosEnhanced(
+                params, cashFlowModel, spendingAdjustment, currentAge, autocorrelation
+            );
+        }
+
+        const currentWithdrawalRate = (params.desired_spending / params.current_portfolio_value) * 100;
+
+        const endTime = performance.now();
+        const totalDurationMs = Math.round(endTime - startTime);
+
+        return {
+            probability_of_success: probabilityOfSuccess,
+            guardrail_status: guardrailStatus,
+            spending_adjustment_needed: spendingAdjustment,
+            desired_spending: params.desired_spending,
+            recommended_spending: recommendedSpending,
+            spending_change_amount: recommendedSpending - params.desired_spending,
+            spending_change_percentage: this.calculatePercentageChange(
+                params.desired_spending,
+                recommendedSpending
+            ),
+            current_withdrawal_rate: parseFloat(currentWithdrawalRate.toFixed(2)),
+            interpretation: this.generateInterpretation({
+                probability_of_success: probabilityOfSuccess,
+                guardrail_status: guardrailStatus,
+                desired_spending: params.desired_spending,
+                recommended_spending: recommendedSpending,
+                spending_change_amount: recommendedSpending - params.desired_spending,
+            }),
+            guardrail_thresholds: {
+                lower: this.lowerGuardrailPos,
+                upper: this.upperGuardrailPos,
+                target: this.targetPos,
+            },
+            monte_carlo: mcResults,
+            portfolio_metrics: {
+                current_value: params.current_portfolio_value,
+                expected_return: parseFloat((simulation.getExpectedReturn() * 100).toFixed(2)),
+                portfolio_volatility: parseFloat((simulation.getPortfolioVolatility() * 100).toFixed(2)),
+            },
+            calculation_duration_ms: totalDurationMs,
+            enhanced_mc_autocorrelation: autocorrelation,
+        };
+    }
+
+    /**
+     * Binary search for target PoS using enhanced (mean-reverting) return generator.
+     */
+    findSpendingForTargetPosEnhanced(params, cashFlowModel, adjustmentDirection, currentAge, autocorrelation) {
+        const targetPos = this.targetPos;
+        const tolerance = 0.5;
+        const maxIterations = 12;
+        const searchSimIterations = 1000;
+
+        const desiredSpending = params.desired_spending;
+        let low, high;
+
+        if (adjustmentDirection === 'decrease') {
+            low = 0;
+            high = desiredSpending;
+        } else {
+            low = desiredSpending;
+            high = Math.max(desiredSpending * 2, params.current_portfolio_value / 5);
+        }
+
+        let bestSpending = desiredSpending;
+        let closestPosDiff = 100.0;
+
+        for (let i = 0; i < maxIterations; i++) {
+            let midSpending = (low + high) / 2;
+            if (midSpending < 0) midSpending = 0;
+
+            const enhancedGen = new EnhancedReturnGenerator(autocorrelation);
+            const sim = this.createSimulation(
+                params, cashFlowModel, midSpending, currentAge, searchSimIterations, enhancedGen
+            );
+            const results = sim.runSimulation();
+            const pos = results.probability_of_success;
+
+            const diff = Math.abs(pos - targetPos);
+            if (diff < closestPosDiff) {
+                closestPosDiff = diff;
+                bestSpending = midSpending;
+            }
+
+            if (diff <= tolerance) {
+                break;
+            }
+
+            if (pos < targetPos) {
+                high = midSpending;
+            } else {
+                low = midSpending;
+            }
+        }
+
+        return Math.round(bestSpending / 10) * 10;
     }
 
     findSpendingForTargetPos(params, cashFlowModel, adjustmentDirection, currentAge) {
