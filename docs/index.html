@@ -280,22 +280,22 @@
                     <!-- Enhanced MC Results Grid (hidden by default) -->
                     <div id="enhancedResultsGrid" class="result-grid enhanced-results-grid" style="display: none;">
                         <div class="enhanced-results-header">
-                            <h4>Enhanced Monte Carlo (Mean-Reverting)</h4>
+                            <h4 id="comparisonGridTitle">Enhanced Monte Carlo (Mean-Reverting)</h4>
                         </div>
                         <div class="result-item">
-                            <div class="result-label">Enhanced PoS</div>
+                            <div class="result-label" id="comparisonPosLabel">Enhanced PoS</div>
                             <div class="result-value" id="enhancedPosResult">--</div>
                         </div>
                         <div class="result-item">
-                            <div class="result-label">Enhanced Recommended Spending</div>
+                            <div class="result-label" id="comparisonSpendingLabel">Enhanced Recommended Spending</div>
                             <div class="result-value" id="enhancedRecommendedResult">--</div>
                         </div>
                         <div class="result-item">
-                            <div class="result-label">Enhanced Adjustment</div>
+                            <div class="result-label" id="comparisonAdjustmentLabel">Enhanced Adjustment</div>
                             <div class="result-value" id="enhancedAdjustmentResult">--</div>
                         </div>
                         <div class="result-item">
-                            <div class="result-label">Mean Reversion (φ)</div>
+                            <div class="result-label" id="comparisonFourthLabel">Mean Reversion (φ)</div>
                             <div class="result-value" id="enhancedAutocorrelationResult">--</div>
                         </div>
                     </div>
@@ -408,23 +408,24 @@
                         </div>
                     </div>
                 </div>
+
+                <footer class="footer">
+                    <p>
+                        <strong>Disclaimer:</strong> This calculator is for educational and planning purposes only. 
+                        It does not constitute financial advice. Monte Carlo simulations are based on historical 
+                        return assumptions and may not predict actual future performance. 
+                        Consult with a qualified financial advisor before making investment decisions.
+                    </p>
+                    <p class="footer-links">
+                        <a href="https://www.kitces.com/blog/risk-based-monte-carlo-probability-of-success-guardrails-retirement-distribution-hatchet/" target="_blank">Learn More About Risk-Based Guardrails</a>
+                    </p>
+                </footer>
             </div>
                     </div>
                 </main>
             </div>
         </div>
 
-        <footer class="footer">
-            <p>
-                <strong>Disclaimer:</strong> This calculator is for educational and planning purposes only. 
-                It does not constitute financial advice. Monte Carlo simulations are based on historical 
-                return assumptions and may not predict actual future performance. 
-                Consult with a qualified financial advisor before making investment decisions.
-            </p>
-            <p class="footer-links">
-                <a href="https://www.kitces.com/blog/risk-based-monte-carlo-probability-of-success-guardrails-retirement-distribution-hatchet/" target="_blank">Learn More About Risk-Based Guardrails</a>
-            </p>
-        </footer>
     </div>
 
     <script src="js/app.js"></script>
