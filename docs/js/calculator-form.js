@@ -372,11 +372,6 @@ function loadFromLocalStorage() {
                     window.addIncomeSource(mappedSource);
                 }
             });
-        } else {
-             // If no saved income sources, add default
-             if (window.addIncomeSource) {
-                 window.addIncomeSource();
-             }
         }
 
         if (data.future_expenses && Array.isArray(data.future_expenses) && data.future_expenses.length > 0) {
@@ -406,10 +401,6 @@ function loadFromLocalStorage() {
 
     } catch (e) {
         console.error("Error loading from local storage", e);
-        // Fallback: add default income source if something crashed
-        if (window.addIncomeSource && document.querySelectorAll('.income-source').length === 0) {
-            window.addIncomeSource();
-        }
     }
 }
 
@@ -505,8 +496,6 @@ function loadFromQueryParams() {
                 window.addIncomeSource();
             }
         }
-    } else if (window.addIncomeSource && document.querySelectorAll('.income-source').length === 0) {
-        window.addIncomeSource();
     }
 
     if (expenseIndexes.size > 0) {
