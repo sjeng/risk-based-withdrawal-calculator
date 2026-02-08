@@ -6,6 +6,30 @@ const app = {
     currentResults: null,
 };
 
+// --- Collapse Toggle for Left Column ---
+document.addEventListener('DOMContentLoaded', () => {
+    const collapseBtn = document.getElementById('collapseBtn');
+    const inputColumn = document.getElementById('inputColumn');
+
+    if (collapseBtn && inputColumn) {
+        // Restore saved state
+        const savedState = localStorage.getItem('inputColumnCollapsed');
+        if (savedState === 'true') {
+            inputColumn.classList.add('collapsed');
+        }
+
+        collapseBtn.addEventListener('click', () => {
+            inputColumn.classList.toggle('collapsed');
+            const isCollapsed = inputColumn.classList.contains('collapsed');
+            localStorage.setItem('inputColumnCollapsed', isCollapsed);
+            // Trigger chart resize after transition completes
+            setTimeout(() => {
+                window.dispatchEvent(new Event('resize'));
+            }, 350);
+        });
+    }
+});
+
 // Format currency
 function formatCurrency(amount, decimals = 0) {
     return '$' + amount.toLocaleString('en-US', {
@@ -117,9 +141,18 @@ function addIncomeSource(savedData = null) {
                     <option value="spouse2" ${recipient === 'spouse2' ? 'selected' : ''}>Spouse 2</option>
                 </select>
             </div>
+        </div>
+        <div class="form-row">
             <div class="form-group">
                 <label>Annual Amount</label>
                 <input type="number" name="income_sources[${incomeSourceCounter}][annual_amount]" min="0" step="1" placeholder="30000" value="${amount}" required>
+            </div>
+            <div class="form-group">
+                <label>Inflation Adjusted?</label>
+                <select name="income_sources[${incomeSourceCounter}][inflation_adjusted]">
+                    <option value="true" ${inflationAdjusted ? 'selected' : ''}>Yes</option>
+                    <option value="false" ${!inflationAdjusted ? 'selected' : ''}>No</option>
+                </select>
             </div>
         </div>
         <div class="form-row">
@@ -131,13 +164,6 @@ function addIncomeSource(savedData = null) {
             <div class="form-group">
                 <label>End Age (leave blank for indefinite)</label>
                 <input type="number" name="income_sources[${incomeSourceCounter}][end_age]" min="0" max="120" placeholder="" value="${endAge}">
-            </div>
-            <div class="form-group">
-                <label>Inflation Adjusted?</label>
-                <select name="income_sources[${incomeSourceCounter}][inflation_adjusted]">
-                    <option value="true" ${inflationAdjusted ? 'selected' : ''}>Yes</option>
-                    <option value="false" ${!inflationAdjusted ? 'selected' : ''}>No</option>
-                </select>
             </div>
         </div>
     `;
@@ -171,6 +197,15 @@ function addExpenseItem(savedData = null) {
                 <input type="text" name="future_expenses[${expenseItemCounter}][name]" placeholder="e.g., Roof replacement" value="${name}" required>
             </div>
             <div class="form-group">
+                <label>Inflation Adjusted?</label>
+                <select name="future_expenses[${expenseItemCounter}][inflation_adjusted]">
+                    <option value="true" ${inflationAdjusted ? 'selected' : ''}>Yes</option>
+                    <option value="false" ${!inflationAdjusted ? 'selected' : ''}>No</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
                 <label>Annual Amount</label>
                 <input type="number" name="future_expenses[${expenseItemCounter}][annual_amount]" min="0" step="1" placeholder="15000" value="${amount}" required>
             </div>
@@ -190,13 +225,6 @@ function addExpenseItem(savedData = null) {
             <div class="form-group">
                 <label>Duration (years)</label>
                 <input type="number" id="expenseDuration-${expenseItemCounter}" name="future_expenses[${expenseItemCounter}][duration_years]" min="1" max="60" placeholder="5" value="${durationYears}" class="expense-duration">
-            </div>
-            <div class="form-group">
-                <label>Inflation Adjusted?</label>
-                <select name="future_expenses[${expenseItemCounter}][inflation_adjusted]">
-                    <option value="true" ${inflationAdjusted ? 'selected' : ''}>Yes</option>
-                    <option value="false" ${!inflationAdjusted ? 'selected' : ''}>No</option>
-                </select>
             </div>
         </div>
     `;
@@ -298,11 +326,12 @@ function displayResults(results, enhancedResults) {
     createProjectionChart(results, enhancedResults);
     createCashflowChart(results);
     
-    // Scroll to results with a small top offset so PoS stays visible
+    // Scroll only in single-column layout
     const resultsSection = document.getElementById('resultsSection');
-    const offset = 170;
-    const top = resultsSection.getBoundingClientRect().top + window.pageYOffset - offset;
-    window.scrollTo({ top, behavior: 'smooth' });
+    const isSingleColumn = window.matchMedia('(max-width: 1024px)').matches;
+    if (isSingleColumn) {
+        resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
 }
 
 // Initialize

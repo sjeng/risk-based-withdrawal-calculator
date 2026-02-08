@@ -546,6 +546,15 @@ function loadFromQueryParams() {
         }
     }
 
+    if (incomeIndexes.size > 0) {
+        document.querySelectorAll('.income-source').forEach(source => {
+            const nameInput = source.querySelector('input[name*="[name]"]');
+            if (nameInput && nameInput.value.trim() === '') {
+                source.remove();
+            }
+        });
+    }
+
     document.querySelectorAll('.expense-item').forEach(item => {
         const typeSelect = item.querySelector('.expense-type');
         const durationInput = item.querySelector('.expense-duration');
@@ -745,7 +754,14 @@ function scrollToField(fieldId) {
     if (!fieldId) return;
     const field = document.getElementById(fieldId);
     if (!field) return;
-    field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // Scroll within the left column container if it exists
+    const leftContent = field.closest('.column-left-content');
+    if (leftContent) {
+        const fieldTop = field.offsetTop - leftContent.offsetTop - leftContent.clientHeight / 2;
+        leftContent.scrollTo({ top: Math.max(0, fieldTop), behavior: 'smooth' });
+    } else {
+        field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
     field.focus({ preventScroll: true });
 }
 

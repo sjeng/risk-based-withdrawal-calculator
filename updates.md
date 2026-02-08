@@ -2,6 +2,16 @@
 
 ## February 8, 2026
 
+### UI Layout and UX
+- Switched to a two-column layout with independent scroll areas and a responsive single-column fallback.
+- Added a collapsible input panel with a header-aligned toggle and improved collapsed state styling.
+- Adjusted the column ratio to 35/65 and made the app width responsive to the viewport.
+- Disabled auto-scroll to results in two-column mode while keeping it in single-column mode.
+
+### Forms and State Loading
+- Reworked income source and future expense panels to place related fields on the same rows.
+- Fixed state-based income source loading to avoid creating an extra empty panel.
+
 ### Enhanced Monte Carlo Fixes
 - Corrected log-normal calibration to center on the geometric mean (full volatility drag) so Enhanced MC is meaningfully more conservative than standard MC.
 - Clarified enhanced model behavior and interpretation guidance in METHODOLOGY.md.

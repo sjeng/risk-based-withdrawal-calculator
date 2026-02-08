@@ -18,9 +18,20 @@
         </header>
 
         <div class="main-content">
-            <!-- Calculator Form -->
-            <div class="card calculator-card">
-                <h2>📊 Input Parameters</h2>
+            <div class="two-column-layout" id="twoColumnLayout">
+                <!-- Left Column: Inputs -->
+                <aside class="column-left" id="inputColumn">
+                    <div class="column-left-content">
+                        <!-- Calculator Form -->
+                        <div class="card calculator-card">
+                            <div class="input-header">
+                                <h2>📊 Input Parameters</h2>
+                                <button type="button" class="collapse-toggle" id="collapseBtn" aria-label="Collapse input panel" title="Collapse inputs">
+                                    <span class="collapse-icon" id="collapseIcon">◀</span>
+                                </button>
+                            </div>
+
+                            <div class="input-body">
                 
                 <form id="calculatorForm">
                     <!-- Personal Information -->
@@ -202,22 +213,28 @@
                         </div>
                     </fieldset>
 
-                    <!-- Submit Button -->
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-primary" id="calculateBtn">
-                            🔬 Run Simulations (10,000 iterations)
-                        </button>
-                        <button type="button" class="btn btn-secondary" id="shareLinkBtn">
-                            🔗 Copy Shareable Link
-                        </button>
+                        </form>
+                            </div>
+                        </div>
                     </div>
-                </form>
+                </aside>
 
-                <div id="loadingIndicator" class="loading-indicator" style="display: none;">
-                    <div class="spinner"></div>
-                    <p>Running Monte Carlo simulation...</p>
-                </div>
-            </div>
+                <!-- Right Column: Actions & Results -->
+                <main class="column-right" id="resultsColumn">
+                    <div class="column-right-content">
+                        <div class="form-actions">
+                            <button type="submit" form="calculatorForm" class="btn btn-primary" id="calculateBtn">
+                                🔬 Run Simulations (10,000 iterations)
+                            </button>
+                            <button type="button" class="btn btn-secondary" id="shareLinkBtn">
+                                🔗 Copy Shareable Link
+                            </button>
+                        </div>
+
+                        <div id="loadingIndicator" class="loading-indicator" style="display: none;">
+                            <div class="spinner"></div>
+                            <p>Running Monte Carlo simulation...</p>
+                        </div>
 
             <!-- Results Section -->
             <div id="resultsSection" class="card results-card" style="display: none;">
@@ -391,6 +408,9 @@
                         </div>
                     </div>
                 </div>
+            </div>
+                    </div>
+                </main>
             </div>
         </div>
 
