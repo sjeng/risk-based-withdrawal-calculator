@@ -12,6 +12,10 @@ This application calculates retirement spending recommendations based on risk-ba
 - Asset allocation and fees
 - Inflation adjustments
 
+## Disclaimer
+
+This calculator is for educational and planning purposes only and does not constitute financial, investment, tax, or legal advice. Results are based on user inputs and assumptions, are not guarantees, and may differ from actual outcomes. Use at your own risk and consult a qualified professional before making financial decisions.
+
 ## Features
 
 - **Client-Side Simulation**: 10,000 Monte Carlo iterations run locally in your browser using Web Workers.
