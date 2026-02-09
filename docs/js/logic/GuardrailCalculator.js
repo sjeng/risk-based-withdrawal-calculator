@@ -60,11 +60,12 @@ export class GuardrailCalculator {
         // Add income sources
         if (params.income_sources && Array.isArray(params.income_sources)) {
             for (const source of params.income_sources) {
+                const adjustedAges = this.getAdjustedIncomeAges(source, params);
                 cashFlowModel.addIncomeSource(
                     source.name,
                     parseFloat(source.annual_amount),
-                    parseInt(source.start_age),
-                    source.end_age ? parseInt(source.end_age) : null,
+                    adjustedAges.start_age,
+                    adjustedAges.end_age,
                     source.inflation_adjusted ?? true
                 );
             }
@@ -223,11 +224,12 @@ export class GuardrailCalculator {
 
         if (params.income_sources && Array.isArray(params.income_sources)) {
             for (const source of params.income_sources) {
+                const adjustedAges = this.getAdjustedIncomeAges(source, params);
                 cashFlowModel.addIncomeSource(
                     source.name,
                     parseFloat(source.annual_amount),
-                    parseInt(source.start_age),
-                    source.end_age ? parseInt(source.end_age) : null,
+                    adjustedAges.start_age,
+                    adjustedAges.end_age,
                     source.inflation_adjusted ?? true
                 );
             }
@@ -501,6 +503,32 @@ export class GuardrailCalculator {
         const customMultipliers = params.custom_spending_multipliers ?? {};
 
         return new SpendingProfile(profileType, customMultipliers);
+    }
+
+    getAdjustedIncomeAges(source, params) {
+        const startAge = parseInt(source.start_age);
+        const endAge = source.end_age != null && source.end_age !== ''
+            ? parseInt(source.end_age)
+            : null;
+        const recipient = source.recipient ?? 'household';
+
+        if (recipient === 'spouse2') {
+            const primaryAge = params.spouse1_age ?? params.current_age;
+            const spouse2Age = params.spouse2_age;
+
+            if (Number.isFinite(primaryAge) && Number.isFinite(spouse2Age)) {
+                const offset = primaryAge - spouse2Age;
+                return {
+                    start_age: startAge + offset,
+                    end_age: endAge != null ? endAge + offset : null,
+                };
+            }
+        }
+
+        return {
+            start_age: startAge,
+            end_age: endAge,
+        };
     }
 
     validateParams(params) {
