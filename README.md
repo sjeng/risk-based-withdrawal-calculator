@@ -23,6 +23,7 @@ This calculator is for educational and planning purposes only and does not const
 - **Retirement Spending Smile**: Model realistic spending patterns over retirement.
 - **Enhanced Monte Carlo (Optional)**: Runs a second simulation with mean-reverting returns to compare against standard MC.
 - **Multiple Income Sources**: Social Security, pensions, and other income streams.
+- **Future Expenses**: Model planned one-time or recurring expenses over the horizon.
 - **Local Persistence**: Calculation inputs are automatically saved to your browser's Local Storage.
 - **Shareable Links**: Inputs are encoded into a compact `state` query param for easy sharing.
 - **Interactive Visualizations**: Charts showing Monte Carlo projections and guardrail status.
@@ -83,7 +84,7 @@ The calculator performs 10,000 Monte Carlo simulations per run, projecting portf
 
 ### Enhanced Monte Carlo (Optional)
 
-Enhanced mode runs a second simulation using log-normal returns with AR(1) mean reversion. This helps model sequence effects more conservatively by allowing downturns to be followed by recoveries and vice versa. Results are shown side-by-side with the standard MC run for comparison.
+Enhanced mode runs a second simulation using log-normal returns with AR(1) mean reversion. This helps model sequence effects more conservatively by allowing downturns to be followed by recoveries and vice versa. Results are shown side-by-side with the standard MC run for comparison. The mean reversion strength is controlled by an autocorrelation coefficient (default -0.10).
 
 ## Usage
 
@@ -92,14 +93,17 @@ Enhanced mode runs a second simulation using log-normal returns with AR(1) mean 
 1. Navigate to http://localhost:8080
 2. Enter your retirement parameters:
    - Current age and retirement age
-   - Initial portfolio value (at retirement)
+   - Planning horizon (years)
    - Current portfolio value
    - Desired annual spending
    - Asset allocation (stocks/bonds/cash)
+   - Fees and inflation assumptions
 3. Add income sources (Social Security, pensions, etc.)
-4. Select spending profile (flat or retirement smile)
-5. Configure guardrail thresholds (defaults: 80% lower, 95% upper)
-6. Click "Calculate" to run Monte Carlo simulation
+4. Add future expenses (one-time or recurring)
+5. Select spending profile (flat or retirement smile)
+6. Configure guardrail thresholds (defaults: 80% lower, 95% upper, 90% target)
+7. Optional: enable Enhanced Monte Carlo and adjust mean reversion strength
+8. Click "Calculate" to run Monte Carlo simulation
 
 ### Interpreting Results
 
