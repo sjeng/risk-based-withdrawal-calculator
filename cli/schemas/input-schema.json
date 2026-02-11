@@ -1,0 +1,216 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "guardrail-cli/input",
+  "title": "Guardrail Calculator Input",
+  "description": "Input parameters for the Risk-Based Guardrail Withdrawal Calculator CLI.",
+  "type": "object",
+  "required": [
+    "retirement_age",
+    "planning_horizon_years",
+    "current_portfolio_value",
+    "desired_spending",
+    "stock_allocation",
+    "bond_allocation",
+    "cash_allocation"
+  ],
+  "properties": {
+    "spouse1_age": {
+      "type": ["integer", "null"],
+      "description": "Current age of the primary person. Required if current_age is not provided."
+    },
+    "spouse2_age": {
+      "type": ["integer", "null"],
+      "description": "Current age of the spouse (optional). Used to adjust income source ages for spouse-specific income."
+    },
+    "current_age": {
+      "type": ["integer", "null"],
+      "description": "Alias for spouse1_age (backward compatibility). One of current_age or spouse1_age is required."
+    },
+    "retirement_age": {
+      "type": "integer",
+      "description": "Age at retirement. Must be <= current age (spouse1_age or current_age)."
+    },
+    "planning_horizon_years": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 60,
+      "description": "Number of years to project (1–60)."
+    },
+    "current_portfolio_value": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Current total portfolio value in dollars. Must be positive."
+    },
+    "desired_spending": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Desired annual spending in dollars. Must be non-negative."
+    },
+    "stock_allocation": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Percentage of portfolio in stocks (0–100). Allocations must sum to 100."
+    },
+    "bond_allocation": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Percentage of portfolio in bonds (0–100). Allocations must sum to 100."
+    },
+    "cash_allocation": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Percentage of portfolio in cash (0–100). Allocations must sum to 100."
+    },
+    "annual_fee_percentage": {
+      "type": "number",
+      "default": 0.0075,
+      "description": "Annual investment fee as a decimal (e.g., 0.0075 = 0.75%). Default: 0.0075."
+    },
+    "inflation_rate": {
+      "type": "number",
+      "default": 0.025,
+      "description": "Annual inflation rate as a decimal (e.g., 0.025 = 2.5%). Default: 0.025."
+    },
+    "spending_profile_type": {
+      "type": "string",
+      "enum": ["flat", "smile", "custom"],
+      "default": "smile",
+      "description": "Spending profile shape. 'smile' models the retirement spending smile. Default: 'smile'."
+    },
+    "custom_spending_multipliers": {
+      "type": "object",
+      "description": "Year-by-year spending multipliers when spending_profile_type is 'custom'. Keys are year numbers (as strings), values are multipliers.",
+      "additionalProperties": { "type": "number" }
+    },
+    "lower_guardrail": {
+      "type": "number",
+      "default": 80,
+      "description": "Lower PoS guardrail threshold (percentage). Below this triggers a spending decrease. Default: 80."
+    },
+    "upper_guardrail": {
+      "type": "number",
+      "default": 95,
+      "description": "Upper PoS guardrail threshold (percentage). Above this triggers a spending increase. Default: 95."
+    },
+    "target_guardrail": {
+      "type": "number",
+      "default": 90,
+      "description": "Target PoS for spending adjustments (percentage). Must be strictly between lower and upper. Default: 90."
+    },
+    "monte_carlo_iterations": {
+      "type": "integer",
+      "default": 10000,
+      "description": "Number of Monte Carlo iterations. Default: 10000."
+    },
+    "enhanced_mc_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Enable enhanced Monte Carlo with mean-reverting log-normal returns. Default: false."
+    },
+    "enhanced_mc_autocorrelation": {
+      "type": "number",
+      "default": -0.10,
+      "description": "AR(1) autocorrelation coefficient for enhanced MC. Negative values model mean reversion. Default: -0.10."
+    },
+    "income_sources": {
+      "type": "array",
+      "default": [],
+      "description": "Future income sources (Social Security, pensions, etc.).",
+      "items": {
+        "type": "object",
+        "required": ["name", "annual_amount", "start_age"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Descriptive name for the income source."
+          },
+          "recipient": {
+            "type": "string",
+            "enum": ["household", "spouse1", "spouse2"],
+            "default": "household",
+            "description": "Who receives the income. 'spouse2' ages are offset by the age difference. Default: 'household'."
+          },
+          "annual_amount": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Annual income amount in dollars."
+          },
+          "start_age": {
+            "type": "integer",
+            "description": "Age at which income begins (in the recipient's age)."
+          },
+          "end_age": {
+            "type": ["integer", "null"],
+            "default": null,
+            "description": "Age at which income ends (null = lifetime). In the recipient's age."
+          },
+          "inflation_adjusted": {
+            "type": "boolean",
+            "default": true,
+            "description": "Whether the income grows with inflation. Default: true."
+          }
+        }
+      }
+    },
+    "future_expenses": {
+      "type": "array",
+      "default": [],
+      "description": "Planned future expenses (one-time or recurring).",
+      "items": {
+        "type": "object",
+        "required": ["name", "annual_amount", "start_age"],
+        "properties": {
+          "item_id": {
+            "type": "string",
+            "description": "Optional identifier for the expense item."
+          },
+          "name": {
+            "type": "string",
+            "description": "Descriptive name for the expense."
+          },
+          "annual_amount": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Annual expense amount in dollars (or total for one-time)."
+          },
+          "start_age": {
+            "type": "integer",
+            "description": "Age at which the expense begins."
+          },
+          "duration_years": {
+            "type": ["integer", "null"],
+            "default": null,
+            "description": "Number of years the expense lasts. Required when type is 'duration'."
+          },
+          "end_age": {
+            "type": ["integer", "null"],
+            "default": null,
+            "description": "Computed as start_age + duration_years - 1. May be provided directly."
+          },
+          "type": {
+            "type": "string",
+            "enum": ["one_time", "duration"],
+            "default": "one_time",
+            "description": "Expense type. 'duration' requires duration_years > 0. Default: 'one_time'."
+          },
+          "inflation_adjusted": {
+            "type": "boolean",
+            "default": false,
+            "description": "Whether the expense grows with inflation. Default: false."
+          },
+          "one_time": {
+            "type": "boolean",
+            "description": "Derived from type: true when type is 'one_time'."
+          }
+        }
+      }
+    }
+  },
+  "oneOf": [
+    { "required": ["spouse1_age"] },
+    { "required": ["current_age"] }
+  ]
+}

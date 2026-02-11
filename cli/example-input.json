@@ -1,0 +1,51 @@
+{
+  "spouse1_age": 62,
+  "spouse2_age": 60,
+  "retirement_age": 60,
+  "planning_horizon_years": 30,
+  "current_portfolio_value": 1500000,
+  "desired_spending": 60000,
+  "stock_allocation": 60,
+  "bond_allocation": 30,
+  "cash_allocation": 10,
+  "annual_fee_percentage": 0.005,
+  "inflation_rate": 0.025,
+  "spending_profile_type": "smile",
+  "lower_guardrail": 80,
+  "upper_guardrail": 95,
+  "target_guardrail": 90,
+  "monte_carlo_iterations": 10000,
+  "enhanced_mc_enabled": false,
+  "enhanced_mc_autocorrelation": -0.10,
+  "income_sources": [
+    {
+      "name": "Social Security - Primary",
+      "recipient": "spouse1",
+      "annual_amount": 30000,
+      "start_age": 67,
+      "end_age": null,
+      "inflation_adjusted": true
+    },
+    {
+      "name": "Social Security - Spouse",
+      "recipient": "spouse2",
+      "annual_amount": 18000,
+      "start_age": 67,
+      "end_age": null,
+      "inflation_adjusted": true
+    }
+  ],
+  "future_expenses": [
+    {
+      "item_id": "healthcare",
+      "name": "Pre-Medicare Healthcare",
+      "annual_amount": 12000,
+      "start_age": 62,
+      "duration_years": 3,
+      "end_age": 64,
+      "type": "duration",
+      "inflation_adjusted": true,
+      "one_time": false
+    }
+  ]
+}

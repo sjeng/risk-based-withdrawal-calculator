@@ -118,15 +118,93 @@ Enhanced mode runs a second simulation using log-normal returns with AR(1) mean 
 
 ```
 risk-based-guardrail/
+├── cli/                     # Node 24 CLI (see CLI Usage below)
+│   ├── guardrail.js          # CLI entry point
+│   ├── validate.js           # Input validation
+│   ├── package.json          # ESM config, no runtime deps
+│   ├── example-input.json    # Sample input for testing
+│   └── schemas/
+│       ├── input-schema.json  # JSON Schema for input
+│       └── output-schema.json # JSON Schema for output
 ├── docker/                  # Docker configuration
 │   └── nginx/               # Nginx web server
 ├── docs/                    # Web-accessible files
 │   ├── index.html            # Main calculator interface
 │   ├── css/                  # Stylesheets
 │   └── js/                   # JavaScript
-│       └── logic/            # Core simulation logic
+│       └── logic/            # Core simulation logic (shared by web & CLI)
 └── docker-compose.yml
 ```
+
+## CLI Usage
+
+The CLI runs the same calculation engine as the browser app under Node.js >= 24, with zero npm dependencies.
+
+### Quick Start
+
+```bash
+cd cli
+node guardrail.js --input example-input.json --pretty
+```
+
+### Options
+
+| Flag | Short | Description |
+|------|-------|-------------|
+| `--input <file>` | `-i` | Read JSON input from a file (default: stdin) |
+| `--enhanced` | `-e` | Also run enhanced Monte Carlo (mean-reverting returns) |
+| `--pretty` | `-p` | Pretty-print JSON output |
+| `--schema <type>` | `-s` | Print JSON Schema (`input` or `output`) and exit |
+| `--help` | `-h` | Show help message |
+
+### Examples
+
+```bash
+# Run calculation from file
+node guardrail.js --input params.json --pretty
+
+# Pipe from stdin
+cat params.json | node guardrail.js --enhanced --pretty
+
+# View the input JSON Schema
+node guardrail.js --schema input
+
+# View the output JSON Schema
+node guardrail.js --schema output
+
+# Use in a pipeline
+node guardrail.js -i params.json | jq '.results.probability_of_success'
+```
+
+### Input Format
+
+See `node guardrail.js --schema input` for the full JSON Schema. Key fields:
+
+- `spouse1_age` or `current_age` (required) — current age of primary person
+- `retirement_age` (required) — must be ≤ current age
+- `planning_horizon_years` (required, 1–60)
+- `current_portfolio_value` (required, > 0)
+- `desired_spending` (required, ≥ 0)
+- `stock_allocation`, `bond_allocation`, `cash_allocation` (required, must sum to 100)
+- `annual_fee_percentage` — decimal, default 0.0075 (0.75%)
+- `inflation_rate` — decimal, default 0.025 (2.5%)
+- `income_sources` — array of future income streams
+- `future_expenses` — array of planned expenses
+
+### Output Format
+
+JSON with `results` (always) and `enhancedResults` (when enhanced MC is enabled). See `node guardrail.js --schema output` for the full schema. Key fields:
+
+- `probability_of_success` — % of simulations where portfolio survived
+- `guardrail_status` — `above_upper`, `within_range`, or `below_lower`
+- `recommended_spending` — adjusted spending targeting the target PoS
+- `monte_carlo.percentiles` — final portfolio value distribution
+
+### Error Handling
+
+- Validation errors are emitted to stderr as `{"error": "..."}` with exit code 1
+- Calculator warnings (e.g. unusual planning horizon) go to stderr as plain text
+- Successful runs exit with code 0
 
 ## Methodology
 

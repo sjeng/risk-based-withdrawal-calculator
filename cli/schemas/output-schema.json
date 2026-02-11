@@ -1,0 +1,180 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "guardrail-cli/output",
+  "title": "Guardrail Calculator Output",
+  "description": "Output from the Risk-Based Guardrail Withdrawal Calculator CLI.",
+  "type": "object",
+  "required": ["results"],
+  "properties": {
+    "results": { "$ref": "#/$defs/calculationResult" },
+    "enhancedResults": {
+      "oneOf": [
+        { "$ref": "#/$defs/calculationResult" },
+        { "type": "null" }
+      ],
+      "description": "Enhanced Monte Carlo results (present when enhanced_mc_enabled is true). Same shape as results, but without income_impact or cashflow_timeline, and with enhanced_mc_autocorrelation added."
+    }
+  },
+  "$defs": {
+    "calculationResult": {
+      "type": "object",
+      "required": [
+        "probability_of_success",
+        "guardrail_status",
+        "spending_adjustment_needed",
+        "desired_spending",
+        "recommended_spending",
+        "spending_change_amount",
+        "spending_change_percentage",
+        "current_withdrawal_rate",
+        "interpretation",
+        "guardrail_thresholds",
+        "monte_carlo",
+        "portfolio_metrics",
+        "calculation_duration_ms"
+      ],
+      "properties": {
+        "probability_of_success": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Percentage of simulations where portfolio lasted the full planning horizon."
+        },
+        "guardrail_status": {
+          "type": "string",
+          "enum": ["above_upper", "within_range", "below_lower"],
+          "description": "Where the current PoS falls relative to the guardrails."
+        },
+        "spending_adjustment_needed": {
+          "type": "string",
+          "enum": ["increase", "maintain", "decrease"],
+          "description": "Recommended spending action based on guardrail status."
+        },
+        "desired_spending": {
+          "type": "number",
+          "description": "The original desired annual spending from the input."
+        },
+        "recommended_spending": {
+          "type": "number",
+          "description": "Adjusted spending that targets the target PoS. Rounded to nearest $10."
+        },
+        "spending_change_amount": {
+          "type": "number",
+          "description": "Dollar difference: recommended_spending - desired_spending."
+        },
+        "spending_change_percentage": {
+          "type": "number",
+          "description": "Percentage change from desired to recommended spending."
+        },
+        "current_withdrawal_rate": {
+          "type": "number",
+          "description": "Current withdrawal rate as a percentage (desired_spending / portfolio_value * 100)."
+        },
+        "interpretation": {
+          "type": "string",
+          "description": "Human-readable summary of the results and recommendations."
+        },
+        "guardrail_thresholds": {
+          "type": "object",
+          "required": ["lower", "upper", "target"],
+          "properties": {
+            "lower": { "type": "number", "description": "Lower PoS guardrail (e.g. 80)." },
+            "upper": { "type": "number", "description": "Upper PoS guardrail (e.g. 95)." },
+            "target": { "type": "number", "description": "Target PoS for adjustments (e.g. 90)." }
+          }
+        },
+        "monte_carlo": {
+          "type": "object",
+          "required": [
+            "probability_of_success",
+            "iterations",
+            "successful",
+            "failed",
+            "duration_ms",
+            "percentiles",
+            "yearly_percentiles"
+          ],
+          "properties": {
+            "probability_of_success": { "type": "number", "description": "Same as top-level PoS." },
+            "iterations": { "type": "integer", "description": "Number of MC iterations run." },
+            "successful": { "type": "integer", "description": "Number of successful iterations." },
+            "failed": { "type": "integer", "description": "Number of failed iterations." },
+            "duration_ms": { "type": "number", "description": "Wall-clock time for the MC simulation in ms." },
+            "percentiles": {
+              "type": "object",
+              "required": ["p10", "p25", "p50", "p75", "p90", "min", "max"],
+              "properties": {
+                "p10":  { "type": "number", "description": "10th percentile final portfolio value." },
+                "p25":  { "type": "number", "description": "25th percentile final portfolio value." },
+                "p50":  { "type": "number", "description": "Median final portfolio value." },
+                "p75":  { "type": "number", "description": "75th percentile final portfolio value." },
+                "p90":  { "type": "number", "description": "90th percentile final portfolio value." },
+                "min":  { "type": "number", "description": "Minimum final portfolio value." },
+                "max":  { "type": "number", "description": "Maximum final portfolio value." }
+              }
+            },
+            "yearly_percentiles": {
+              "type": "array",
+              "description": "Year-by-year portfolio value percentiles.",
+              "items": {
+                "type": "object",
+                "required": ["year", "age", "p10", "p25", "p50", "p75", "p90"],
+                "properties": {
+                  "year": { "type": "integer" },
+                  "age":  { "type": "integer" },
+                  "p10":  { "type": "number" },
+                  "p25":  { "type": "number" },
+                  "p50":  { "type": "number" },
+                  "p75":  { "type": "number" },
+                  "p90":  { "type": "number" }
+                }
+              }
+            }
+          }
+        },
+        "portfolio_metrics": {
+          "type": "object",
+          "required": ["current_value", "expected_return", "portfolio_volatility"],
+          "properties": {
+            "current_value":       { "type": "number", "description": "Input portfolio value." },
+            "expected_return":     { "type": "number", "description": "Weighted expected return (%, 2dp)." },
+            "portfolio_volatility": { "type": "number", "description": "Weighted volatility (%, 2dp)." }
+          }
+        },
+        "income_impact": {
+          "type": "object",
+          "description": "Year-0 income/expense impact (standard results only; absent in enhanced results).",
+          "properties": {
+            "year0_income":         { "type": "number", "description": "Total income in year 0." },
+            "year0_expenses":       { "type": "number", "description": "Total expenses in year 0." },
+            "year0_net_withdrawal": { "type": "number", "description": "Net portfolio withdrawal in year 0." }
+          }
+        },
+        "cashflow_timeline": {
+          "type": "array",
+          "description": "Year-by-year cash flow projection (standard results only; absent in enhanced results).",
+          "items": {
+            "type": "object",
+            "required": ["year", "age", "spending", "income", "expenses", "net_withdrawal"],
+            "properties": {
+              "year":           { "type": "integer" },
+              "age":            { "type": "integer" },
+              "spending":       { "type": "number" },
+              "income":         { "type": "number" },
+              "expenses":       { "type": "number" },
+              "net_withdrawal": { "type": "number" }
+            }
+          }
+        },
+        "calculation_duration_ms": {
+          "type": "number",
+          "description": "Total wall-clock time for the calculation in ms."
+        },
+        "enhanced_mc_autocorrelation": {
+          "type": "number",
+          "description": "AR(1) autocorrelation used (enhanced results only)."
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "guardrail-cli",
+  "version": "1.0.0",
+  "description": "CLI for the Risk-Based Guardrail Withdrawal Calculator",
+  "type": "module",
+  "bin": {
+    "guardrail": "./guardrail.js"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "start": "node guardrail.js"
+  },
+  "keywords": ["retirement", "guardrail", "monte-carlo", "cli"],
+  "license": "MIT"
+}
