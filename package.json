@@ -1,0 +1,11 @@
+{
+  "name": "risk-based-guardrail",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:docs:dist": "node scripts/build-docs-dist.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
+}

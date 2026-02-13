@@ -60,6 +60,21 @@ Then open [http://localhost:8080](http://localhost:8080).
 ### Note on File System Access
 Opening `docs/index.html` directly (via `file://`) will likely fail in modern browsers due to security restrictions on Web Workers and ES Modules. Please use one of the HTTP server options above.
 
+### Portable File Build (`file://`)
+
+If you want to open the app directly by double-clicking an HTML file, build the portable version:
+
+```bash
+npm install
+npm run build:docs:dist
+```
+
+Then open `dist/index.html` directly in your browser.
+
+Notes:
+- The portable build bundles worker/module logic into browser-safe files for local `file://` use.
+- Existing HTTP workflows (`docker-compose`, static server, etc.) are unchanged.
+
 ### Hosting
 
 This is a static website. You can host it on:
