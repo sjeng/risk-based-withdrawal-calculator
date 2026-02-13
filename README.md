@@ -73,6 +73,7 @@ Then open `dist/index.html` directly in your browser.
 
 Notes:
 - The portable build bundles worker/module logic into browser-safe files for local `file://` use.
+- Chart.js is copied into `dist/js/vendor/chart.umd.js` so the portable build does not depend on CDN availability.
 - Existing HTTP workflows (`docker-compose`, static server, etc.) are unchanged.
 
 ### Hosting

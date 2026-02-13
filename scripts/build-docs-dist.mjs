@@ -1,5 +1,5 @@
 import { build } from 'esbuild';
-import { cpSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -8,6 +8,8 @@ const __dirname = dirname(__filename);
 const rootDir = join(__dirname, '..');
 const docsDir = join(rootDir, 'docs');
 const distDir = join(rootDir, 'dist');
+const chartSourcePath = join(rootDir, 'node_modules', 'chart.js', 'dist', 'chart.umd.js');
+const chartDistPath = join(distDir, 'js', 'vendor', 'chart.umd.js');
 const minify = process.argv.includes('--minify');
 
 function toRelativeAssetUrl(url) {
@@ -25,6 +27,11 @@ function toRelativeAssetUrl(url) {
 
 function rewriteHtmlForPortableBuild(sourceHtml) {
   let html = sourceHtml;
+
+  html = html.replace(
+    /<script\s+src=(['"])https:\/\/cdn\.jsdelivr\.net\/npm\/chart\.js@[^'"]+\1><\/script>/i,
+    '<script src="./js/vendor/chart.umd.js"></script>'
+  );
 
   html = html.replace(/(href|src)=(['"])([^'"]+)\2/gi, (_match, attr, quote, value) => {
     const rewritten = toRelativeAssetUrl(value);
@@ -62,6 +69,13 @@ function rewriteCalculatorFormForPortableBuild(sourceJs) {
 
 rmSync(distDir, { recursive: true, force: true });
 cpSync(docsDir, distDir, { recursive: true });
+
+if (!existsSync(chartSourcePath)) {
+  throw new Error('Chart.js was not found in node_modules. Run npm install before building.');
+}
+
+mkdirSync(join(distDir, 'js', 'vendor'), { recursive: true });
+cpSync(chartSourcePath, chartDistPath);
 
 await build({
   entryPoints: [join(docsDir, 'js', 'worker.js')],

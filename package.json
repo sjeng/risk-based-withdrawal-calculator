@@ -6,6 +6,7 @@
     "build:docs:dist": "node scripts/build-docs-dist.mjs"
   },
   "devDependencies": {
+    "chart.js": "^4.4.0",
     "esbuild": "^0.25.0"
   }
 }
