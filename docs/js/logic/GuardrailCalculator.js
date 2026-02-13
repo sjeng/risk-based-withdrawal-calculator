@@ -170,7 +170,7 @@ export class GuardrailCalculator {
 
         for (let year = 0; year < planningHorizonYears; year += 1) {
             const age = currentAge + year;
-            const spending = cashFlowModel.getSpendingForYear(desiredSpending, currentAge, retirementAge, year);
+            const spending = cashFlowModel.getSpendingForYear(desiredSpending, age, retirementAge, year);
             const income = cashFlowModel.getIncomeForYear(age, year);
             const expenses = cashFlowModel.getExpensesForYear(age, year);
             const netWithdrawal = spending + expenses - income;

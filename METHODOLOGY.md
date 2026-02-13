@@ -58,9 +58,9 @@ This aligns with the principle: **"Solve for the spending level that would bring
 ## 4. The Retirement Spending Smile
 
 The application assumes spending does not match inflation perfectly every year. It uses the "Retirement Spending Smile" (modeled in `docs/js/logic/SpendingProfile.js`):
-*   **Early Retirement:** High activity/spending.
-*   **Mid Retirement:** Gradual real-dollar decline (travel stops, activity slows).
-*   **Late Retirement:** Slight uptick for healthcare, but generally lower than active years.
+*   **Early Retirement:** Starts at 100% of initial real spending.
+*   **Mid Retirement:** Gradual real-dollar decline to a trough near age 84 (about 74% of initial spending in the default curve).
+*   **Late Retirement:** Rebound toward initial real spending by the mid-90s to reflect higher healthcare-related costs.
 
 This "Smile" curve is built into the underlying Monte Carlo engine, ensuring the Guardrails are making decisions based on realistic lifelong spending patterns.
 

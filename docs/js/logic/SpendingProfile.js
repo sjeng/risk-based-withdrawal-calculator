@@ -38,31 +38,33 @@ export class SpendingProfile {
     }
 
     getSmileMultiplier(age, retirementAge) {
-        // Years since retirement
-        const yearsSinceRetirement = age - retirementAge;
+        // Blanchett-style retirement spending smile approximation:
+        // - Start at 100% real spending at retirement
+        // - Decline to ~74.146% by age 84 (for age-65 retiree in cited illustration)
+        // - Rebound toward 100% by age 95 due to rising late-life healthcare costs
+        const troughAge = 84;
+        const reboundAge = 95;
+        const troughMultiplier = 0.74146;
+        const peakMultiplier = 1.00;
 
-        // Early retirement: maintain 100% spending for first 5 years
-        if (yearsSinceRetirement <= 5) {
-            return 1.00;
+        if (age <= retirementAge) {
+            return peakMultiplier;
         }
 
-        // Ages 6-10 years into retirement: Slight decline to 95%
-        if (yearsSinceRetirement <= 10) {
-            return 1.00 - ((yearsSinceRetirement - 5) * 0.01);
+        if (age <= troughAge) {
+            const declineSpan = Math.max(1, troughAge - retirementAge);
+            const progress = (age - retirementAge) / declineSpan;
+            return peakMultiplier + (troughMultiplier - peakMultiplier) * progress;
         }
 
-        // Ages 11-20 years into retirement: Gradual decline to 85%
-        if (yearsSinceRetirement <= 20) {
-            return 0.95 - ((yearsSinceRetirement - 10) * 0.01);
+        if (age <= reboundAge) {
+            const reboundSpan = reboundAge - troughAge;
+            const progress = (age - troughAge) / reboundSpan;
+            return troughMultiplier + (peakMultiplier - troughMultiplier) * progress;
         }
 
-        // Ages 21-30 years into retirement: Slower decline to 80%
-        if (yearsSinceRetirement <= 30) {
-            return 0.85 - ((yearsSinceRetirement - 20) * 0.005);
-        }
-
-        // Ages 31+ years into retirement: Maintain at 80%
-        return 0.80;
+        // Cap near 100% of initial real spending in very late years.
+        return peakMultiplier;
     }
 
     getCustomMultiplier(age) {
