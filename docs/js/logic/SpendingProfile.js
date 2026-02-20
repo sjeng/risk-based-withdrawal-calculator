@@ -1,17 +1,15 @@
 export class SpendingProfile {
     /**
-     * @param {string} profileType 'flat', 'smile', 'custom'
-     * @param {Object} customMultipliers key-value pairs of age: multiplier
+     * @param {string} profileType 'flat' or 'smile'
      */
-    constructor(profileType = 'smile', customMultipliers = {}) {
-        const validTypes = ['flat', 'smile', 'custom'];
+    constructor(profileType = 'smile') {
+        const validTypes = ['flat', 'smile'];
         if (!validTypes.includes(profileType)) {
             console.error("Invalid profile type provided: " + profileType + ", defaulting to 'smile'");
             profileType = 'smile';
         }
 
         this.profileType = profileType;
-        this.customMultipliers = customMultipliers;
     }
 
     /**
@@ -23,17 +21,15 @@ export class SpendingProfile {
     getSpendingMultiplier(age, retirementAge) {
         switch (this.profileType) {
             case 'flat':
-                return this.getFlatMultiplier(age);
+                return this.getFlatMultiplier();
             case 'smile':
                 return this.getSmileMultiplier(age, retirementAge);
-            case 'custom':
-                return this.getCustomMultiplier(age);
             default:
                 return 1.0;
         }
     }
 
-    getFlatMultiplier(age) {
+    getFlatMultiplier() {
         return 1.0;
     }
 
@@ -65,16 +61,6 @@ export class SpendingProfile {
 
         // Cap near 100% of initial real spending in very late years.
         return peakMultiplier;
-    }
-
-    getCustomMultiplier(age) {
-        // Implementation omitted for simplicity as it relies on complex interpolation 
-        // and 'custom' type isn't used in default scenarios yet.
-        // For a full port, one should implement the interpolation logic if needed.
-        if (this.customMultipliers[age] !== undefined) {
-            return this.customMultipliers[age];
-        }
-        return 1.0;
     }
 
     /**

@@ -1,4 +1,4 @@
-import { Config } from './Config.js';
+import { BaseReturnGenerator } from './BaseReturnGenerator.js';
 
 /**
  * EnhancedReturnGenerator uses log-normal returns with geometric-mean centering
@@ -29,11 +29,9 @@ import { Config } from './Config.js';
  * Calibration: Poterba & Summers (1988), Fama & French (1988) — annual equity autocorrelation
  *              estimates range from -0.05 to -0.20. Default φ = -0.10 is conservative.
  */
-export class EnhancedReturnGenerator {
+export class EnhancedReturnGenerator extends BaseReturnGenerator {
     constructor(autocorrelation = null) {
-        this.config = Config;
-        this.returnAssumptions = this.config.return_assumptions;
-        this.correlations = this.config.correlations;
+        super();
 
         this.autocorrelation = autocorrelation ??
             this.config.enhanced_mc?.default_autocorrelation ?? -0.10;
@@ -55,10 +53,7 @@ export class EnhancedReturnGenerator {
      * with AR(1) autocorrelation (mean reversion).
      */
     generateReturn(stockAllocation, bondAllocation, cashAllocation) {
-        const total = stockAllocation + bondAllocation + cashAllocation;
-        if (Math.abs(total - 100.0) > 0.01) {
-            console.warn("Asset allocations should sum to 100%, got: " + total);
-        }
+        this.validateAllocations(stockAllocation, bondAllocation, cashAllocation);
 
         const portfolioMean = this.getExpectedReturn(stockAllocation, bondAllocation, cashAllocation);
         const portfolioVol = this.getPortfolioVolatility(stockAllocation, bondAllocation, cashAllocation);
@@ -133,55 +128,4 @@ export class EnhancedReturnGenerator {
         return simpleReturn;
     }
 
-    /**
-     * Generate a standard normal random variate using the Box-Muller transform.
-     */
-    standardNormal() {
-        let u1 = 0, u2 = 0;
-        while (u1 === 0) u1 = Math.random();
-        while (u2 === 0) u2 = Math.random();
-        return Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
-    }
-
-    /**
-     * Portfolio expected return — same formula as ReturnGenerator.
-     */
-    getExpectedReturn(stockAllocation, bondAllocation, cashAllocation) {
-        const stockWeight = stockAllocation / 100.0;
-        const bondWeight = bondAllocation / 100.0;
-        const cashWeight = cashAllocation / 100.0;
-
-        return (
-            stockWeight * this.returnAssumptions.stocks.mean +
-            bondWeight * this.returnAssumptions.bonds.mean +
-            cashWeight * this.returnAssumptions.cash.mean
-        );
-    }
-
-    /**
-     * Portfolio volatility — same formula as ReturnGenerator.
-     */
-    getPortfolioVolatility(stockAllocation, bondAllocation, cashAllocation) {
-        const wS = stockAllocation / 100.0;
-        const wB = bondAllocation / 100.0;
-        const wC = cashAllocation / 100.0;
-
-        const sdS = this.returnAssumptions.stocks.std_dev;
-        const sdB = this.returnAssumptions.bonds.std_dev;
-        const sdC = this.returnAssumptions.cash.std_dev;
-
-        const corrSB = this.correlations.stocks_bonds ?? 0.0;
-        const corrSC = this.correlations.stocks_cash ?? 0.0;
-        const corrBC = this.correlations.bonds_cash ?? 0.0;
-
-        const variance =
-            (Math.pow(wS * sdS, 2)) +
-            (Math.pow(wB * sdB, 2)) +
-            (Math.pow(wC * sdC, 2)) +
-            (2 * wS * wB * sdS * sdB * corrSB) +
-            (2 * wS * wC * sdS * sdC * corrSC) +
-            (2 * wB * wC * sdB * sdC * corrBC);
-
-        return Math.sqrt(variance);
-    }
 }

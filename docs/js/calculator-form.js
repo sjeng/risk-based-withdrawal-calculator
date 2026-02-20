@@ -20,7 +20,6 @@ const QUERY_PARAM_MAP = {
     spouse2_age: 's2',
     retirement_age: 'ra',
     planning_horizon_years: 'ph',
-    initial_portfolio_value: 'ip',
     current_portfolio_value: 'cp',
     desired_spending: 'ds',
     stock_allocation: 'sa',
@@ -350,26 +349,8 @@ function loadFromLocalStorage() {
             
             // Re-create sources
             data.income_sources.forEach(source => {
-                // Ensure field names match what addIncomeSource expects
-                // data.income_sources comes from collectFormData, which has structure:
-                // { name, recipient, annual_amount, start_age, end_age, inflation_adjusted }
-                // addIncomeSource expects { source_name, recipient, annual_amount, start_age, end_age, is_inflation_adjusted }
-                // or just passes it through?
-                // Let's check app.js addIncomeSource again.
-                // const name = savedData?.source_name || '';
-                // It looks for source_name. But collectFormData provides 'name'.
-                
-                const mappedSource = {
-                    source_name: source.name,
-                    recipient: source.recipient,
-                    annual_amount: source.annual_amount,
-                    start_age: source.start_age,
-                    end_age: source.end_age,
-                    is_inflation_adjusted: source.inflation_adjusted
-                };
-                
                 if (window.addIncomeSource) {
-                    window.addIncomeSource(mappedSource);
+                    window.addIncomeSource(source);
                 }
             });
         }

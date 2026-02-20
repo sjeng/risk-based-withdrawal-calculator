@@ -102,6 +102,27 @@ The calculator performs 10,000 Monte Carlo simulations per run, projecting portf
 
 Enhanced mode runs a second simulation using log-normal returns with AR(1) mean reversion. This helps model sequence effects more conservatively by allowing downturns to be followed by recoveries and vice versa. Results are shown side-by-side with the standard MC run for comparison. The mean reversion strength is controlled by an autocorrelation coefficient (default -0.10).
 
+### Key Concepts
+
+1. **Probability of Success (PoS)**: The percentage of Monte Carlo simulations where the portfolio successfully lasts the entire planning horizon
+
+2. **Risk-Based Guardrails**: Unlike withdrawal-rate guardrails, these use PoS thresholds:
+   - Lower guardrail (default 80%): Trigger spending decrease
+   - Upper guardrail (default 95%): Trigger spending increase
+
+3. **Retirement Distribution Hatchet**: Spending naturally declines over retirement due to:
+   - Social Security claiming (reducing portfolio withdrawals)
+   - Natural spending decline with age
+   - Healthcare and other changing expenses
+
+4. **Dynamic Adjustments**: Spending recommendations adapt to:
+   - Actual investment returns experienced
+   - Changing longevity expectations
+   - Future income sources
+   - Current portfolio value vs. initial plan
+
+For a detailed technical discussion, see [METHODOLOGY.md](METHODOLOGY.md).
+
 ## Usage
 
 ### Basic Calculation
@@ -222,29 +243,6 @@ JSON with `results` (always) and `enhancedResults` (when enhanced MC is enabled)
 - Calculator warnings (e.g. unusual planning horizon) go to stderr as plain text
 - Successful runs exit with code 0
 
-## Methodology
-
-This calculator implements the risk-based guardrails approach described in [Kitce's research](https://www.kitces.com/blog/risk-based-monte-carlo-probability-of-success-guardrails-retirement-distribution-hatchet/).
-
-### Key Concepts
-
-1. **Probability of Success (PoS)**: The percentage of Monte Carlo simulations where the portfolio successfully lasts the entire planning horizon
-
-2. **Risk-Based Guardrails**: Unlike withdrawal-rate guardrails, these use PoS thresholds:
-   - Lower guardrail (default 80%): Trigger spending decrease
-   - Upper guardrail (default 95%): Trigger spending increase
-
-3. **Retirement Distribution Hatchet**: Spending naturally declines over retirement due to:
-   - Social Security claiming (reducing portfolio withdrawals)
-   - Natural spending decline with age
-   - Healthcare and other changing expenses
-
-4. **Dynamic Adjustments**: Spending recommendations adapt to:
-   - Actual investment returns experienced
-   - Changing longevity expectations
-   - Future income sources
-   - Current portfolio value vs. initial plan
-
 ## Configuration
 
 ### Asset Allocation
@@ -294,4 +292,4 @@ docker-compose up -d --build
 
 ## License
 
-[Specify your license here]
+Apache-2.0

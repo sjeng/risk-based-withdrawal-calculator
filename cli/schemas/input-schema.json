@@ -76,14 +76,9 @@
     },
     "spending_profile_type": {
       "type": "string",
-      "enum": ["flat", "smile", "custom"],
+      "enum": ["flat", "smile"],
       "default": "smile",
       "description": "Spending profile shape. 'smile' models the retirement spending smile. Default: 'smile'."
-    },
-    "custom_spending_multipliers": {
-      "type": "object",
-      "description": "Year-by-year spending multipliers when spending_profile_type is 'custom'. Keys are year numbers (as strings), values are multipliers.",
-      "additionalProperties": { "type": "number" }
     },
     "lower_guardrail": {
       "type": "number",

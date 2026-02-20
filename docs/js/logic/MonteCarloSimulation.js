@@ -29,7 +29,6 @@ export class MonteCarloSimulation {
         iterations = 10000,
         returnGenerator = null
     ) {
-        this.config = Config;
         this.returnGenerator = returnGenerator || new ReturnGenerator();
         this.cashFlowModel = cashFlowModel;
 
@@ -51,8 +50,8 @@ export class MonteCarloSimulation {
     }
 
     validateIterations(iterations) {
-        const min = this.config.monte_carlo.min_iterations;
-        const max = this.config.monte_carlo.max_iterations;
+        const min = Config.monte_carlo.min_iterations;
+        const max = Config.monte_carlo.max_iterations;
 
         if (iterations < min || iterations > max) {
             console.warn(`Iterations must be between ${min} and ${max}, got ${iterations}`);

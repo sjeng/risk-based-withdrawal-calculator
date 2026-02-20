@@ -3,21 +3,17 @@ import { SpendingProfile } from './SpendingProfile.js';
 import { CashFlowModel } from './CashFlowModel.js';
 import { MonteCarloSimulation } from './MonteCarloSimulation.js';
 import { EnhancedReturnGenerator } from './EnhancedReturnGenerator.js';
+import { formatCurrency } from './formatters.js';
+import { validateInput } from './validateInput.js';
 
 export class GuardrailCalculator {
-    constructor(
-        lowerGuardrailPos = null,
-        upperGuardrailPos = null,
-        targetPos = null
-    ) {
+    static SEARCH_ITERATIONS = 1000;
+
+    constructor() {
         this.config = Config;
-
-        // Use provided values or defaults from config
-        this.lowerGuardrailPos = lowerGuardrailPos ?? this.config.guardrails.default_lower;
-        this.upperGuardrailPos = upperGuardrailPos ?? this.config.guardrails.default_upper;
-        this.targetPos = targetPos ?? this.config.guardrails.default_target;
-
-        this.validateGuardrails();
+        this.lowerGuardrailPos = this.config.guardrails.default_lower;
+        this.upperGuardrailPos = this.config.guardrails.default_upper;
+        this.targetPos = this.config.guardrails.default_target;
     }
 
     validateGuardrails() {
@@ -42,22 +38,38 @@ export class GuardrailCalculator {
     }
 
     calculate(params) {
+        return this._calculate(params, {
+            returnGenerator: null,
+            includeTimeline: true,
+        });
+    }
+
+    calculateEnhanced(params) {
+        const autocorrelation = params.enhanced_mc_autocorrelation ??
+            this.config.enhanced_mc?.default_autocorrelation ?? -0.10;
+        const enhancedGen = new EnhancedReturnGenerator(autocorrelation);
+
+        const result = this._calculate(params, {
+            returnGenerator: enhancedGen,
+            includeTimeline: false,
+        });
+
+        result.enhanced_mc_autocorrelation = autocorrelation;
+        return result;
+    }
+
+    _calculate(params, { returnGenerator = null, includeTimeline = true } = {}) {
         const startTime = performance.now();
 
-        // Extract and validate parameters
         this.validateParams(params);
         this.applyGuardrailsFromParams(params);
 
-        // Create spending profile
         const spendingProfile = this.createSpendingProfile(params);
-
-        // Create cash flow model
         const cashFlowModel = new CashFlowModel(
             spendingProfile,
             params.inflation_rate
         );
 
-        // Add income sources
         if (params.income_sources && Array.isArray(params.income_sources)) {
             for (const source of params.income_sources) {
                 const adjustedAges = this.getAdjustedIncomeAges(source, params);
@@ -71,7 +83,6 @@ export class GuardrailCalculator {
             }
         }
 
-        // Add future expense items
         if (params.future_expenses && Array.isArray(params.future_expenses)) {
             for (const item of params.future_expenses) {
                 cashFlowModel.addExpenseItem(
@@ -85,41 +96,42 @@ export class GuardrailCalculator {
             }
         }
 
-        // Create and run Monte Carlo simulation
         const currentAge = params.spouse1_age ?? params.current_age;
-        const year0Income = cashFlowModel.getIncomeForYear(currentAge, 0);
-        const year0Expenses = cashFlowModel.getExpensesForYear(currentAge, 0);
-        const year0NetWithdrawal = params.desired_spending + year0Expenses - year0Income;
-
-        const simulation = this.createSimulation(params, cashFlowModel, params.desired_spending, currentAge);
+        const simulation = this.createSimulation(
+            params,
+            cashFlowModel,
+            params.desired_spending,
+            currentAge,
+            null,
+            returnGenerator
+        );
         const mcResults = simulation.runSimulation();
 
-        // Determine guardrail status and recommendations
         const probabilityOfSuccess = mcResults.probability_of_success;
         const guardrailStatus = this.determineGuardrailStatus(probabilityOfSuccess);
         const spendingAdjustment = this.determineSpendingAdjustment(guardrailStatus);
 
-        let recommendedSpending;
+        const generatorFactory = returnGenerator
+            ? () => new EnhancedReturnGenerator(returnGenerator.autocorrelation)
+            : () => null;
 
-        // Calculate recommended spending using target-seeking approach if needed
+        let recommendedSpending;
         if (spendingAdjustment === 'maintain') {
             recommendedSpending = params.desired_spending;
         } else {
-            recommendedSpending = this.findSpendingForTargetPos(
+            recommendedSpending = this._findSpendingForTargetPos(
                 params,
                 cashFlowModel,
                 spendingAdjustment,
-                currentAge
+                currentAge,
+                generatorFactory
             );
         }
 
-        // Calculate current withdrawal rate
         const currentWithdrawalRate = (params.desired_spending / params.current_portfolio_value) * 100;
-
         const endTime = performance.now();
-        const totalDurationMs = Math.round(endTime - startTime);
 
-        return {
+        const result = {
             probability_of_success: probabilityOfSuccess,
             guardrail_status: guardrailStatus,
             spending_adjustment_needed: spendingAdjustment,
@@ -149,20 +161,27 @@ export class GuardrailCalculator {
                 expected_return: parseFloat((simulation.getExpectedReturn() * 100).toFixed(2)),
                 portfolio_volatility: parseFloat((simulation.getPortfolioVolatility() * 100).toFixed(2)),
             },
-            income_impact: {
+            calculation_duration_ms: Math.round(endTime - startTime),
+        };
+
+        if (includeTimeline) {
+            const year0Income = cashFlowModel.getIncomeForYear(currentAge, 0);
+            const year0Expenses = cashFlowModel.getExpensesForYear(currentAge, 0);
+            result.income_impact = {
                 year0_income: year0Income,
                 year0_expenses: year0Expenses,
-                year0_net_withdrawal: year0NetWithdrawal,
-            },
-            cashflow_timeline: this.buildCashflowTimeline(
+                year0_net_withdrawal: params.desired_spending + year0Expenses - year0Income,
+            };
+            result.cashflow_timeline = this.buildCashflowTimeline(
                 cashFlowModel,
                 params.desired_spending,
                 currentAge,
                 params.retirement_age,
                 params.planning_horizon_years
-            ),
-            calculation_duration_ms: totalDurationMs,
-        };
+            );
+        }
+
+        return result;
     }
 
     buildCashflowTimeline(cashFlowModel, desiredSpending, currentAge, retirementAge, planningHorizonYears) {
@@ -205,124 +224,14 @@ export class GuardrailCalculator {
         );
     }
 
-    /**
-     * Run the enhanced Monte Carlo simulation using log-normal returns with
-     * AR(1) mean reversion. Returns results in the same shape as calculate().
-     */
-    calculateEnhanced(params) {
-        const startTime = performance.now();
-
-        this.validateParams(params);
-        this.applyGuardrailsFromParams(params);
-
-        const spendingProfile = this.createSpendingProfile(params);
-
-        const cashFlowModel = new CashFlowModel(
-            spendingProfile,
-            params.inflation_rate
-        );
-
-        if (params.income_sources && Array.isArray(params.income_sources)) {
-            for (const source of params.income_sources) {
-                const adjustedAges = this.getAdjustedIncomeAges(source, params);
-                cashFlowModel.addIncomeSource(
-                    source.name,
-                    parseFloat(source.annual_amount),
-                    adjustedAges.start_age,
-                    adjustedAges.end_age,
-                    source.inflation_adjusted ?? true
-                );
-            }
-        }
-
-        if (params.future_expenses && Array.isArray(params.future_expenses)) {
-            for (const item of params.future_expenses) {
-                cashFlowModel.addExpenseItem(
-                    item.name,
-                    parseFloat(item.annual_amount),
-                    parseInt(item.start_age),
-                    item.end_age != null ? parseInt(item.end_age) : null,
-                    item.inflation_adjusted ?? true,
-                    item.one_time ?? false
-                );
-            }
-        }
-
-        const currentAge = params.spouse1_age ?? params.current_age;
-        const autocorrelation = params.enhanced_mc_autocorrelation ??
-            this.config.enhanced_mc?.default_autocorrelation ?? -0.10;
-        const enhancedGen = new EnhancedReturnGenerator(autocorrelation);
-
-        const simulation = this.createSimulation(
-            params, cashFlowModel, params.desired_spending, currentAge, null, enhancedGen
-        );
-        const mcResults = simulation.runSimulation();
-
-        const probabilityOfSuccess = mcResults.probability_of_success;
-        const guardrailStatus = this.determineGuardrailStatus(probabilityOfSuccess);
-        const spendingAdjustment = this.determineSpendingAdjustment(guardrailStatus);
-
-        let recommendedSpending;
-
-        if (spendingAdjustment === 'maintain') {
-            recommendedSpending = params.desired_spending;
-        } else {
-            recommendedSpending = this.findSpendingForTargetPosEnhanced(
-                params, cashFlowModel, spendingAdjustment, currentAge, autocorrelation
-            );
-        }
-
-        const currentWithdrawalRate = (params.desired_spending / params.current_portfolio_value) * 100;
-
-        const endTime = performance.now();
-        const totalDurationMs = Math.round(endTime - startTime);
-
-        return {
-            probability_of_success: probabilityOfSuccess,
-            guardrail_status: guardrailStatus,
-            spending_adjustment_needed: spendingAdjustment,
-            desired_spending: params.desired_spending,
-            recommended_spending: recommendedSpending,
-            spending_change_amount: recommendedSpending - params.desired_spending,
-            spending_change_percentage: this.calculatePercentageChange(
-                params.desired_spending,
-                recommendedSpending
-            ),
-            current_withdrawal_rate: parseFloat(currentWithdrawalRate.toFixed(2)),
-            interpretation: this.generateInterpretation({
-                probability_of_success: probabilityOfSuccess,
-                guardrail_status: guardrailStatus,
-                desired_spending: params.desired_spending,
-                recommended_spending: recommendedSpending,
-                spending_change_amount: recommendedSpending - params.desired_spending,
-            }),
-            guardrail_thresholds: {
-                lower: this.lowerGuardrailPos,
-                upper: this.upperGuardrailPos,
-                target: this.targetPos,
-            },
-            monte_carlo: mcResults,
-            portfolio_metrics: {
-                current_value: params.current_portfolio_value,
-                expected_return: parseFloat((simulation.getExpectedReturn() * 100).toFixed(2)),
-                portfolio_volatility: parseFloat((simulation.getPortfolioVolatility() * 100).toFixed(2)),
-            },
-            calculation_duration_ms: totalDurationMs,
-            enhanced_mc_autocorrelation: autocorrelation,
-        };
-    }
-
-    /**
-     * Binary search for target PoS using enhanced (mean-reverting) return generator.
-     */
-    findSpendingForTargetPosEnhanced(params, cashFlowModel, adjustmentDirection, currentAge, autocorrelation) {
+    _findSpendingForTargetPos(params, cashFlowModel, adjustmentDirection, currentAge, generatorFactory) {
         const targetPos = this.targetPos;
         const tolerance = 0.5;
         const maxIterations = 12;
-        const searchSimIterations = 1000;
 
         const desiredSpending = params.desired_spending;
-        let low, high;
+        let low;
+        let high;
 
         if (adjustmentDirection === 'decrease') {
             low = 0;
@@ -339,9 +248,13 @@ export class GuardrailCalculator {
             let midSpending = (low + high) / 2;
             if (midSpending < 0) midSpending = 0;
 
-            const enhancedGen = new EnhancedReturnGenerator(autocorrelation);
             const sim = this.createSimulation(
-                params, cashFlowModel, midSpending, currentAge, searchSimIterations, enhancedGen
+                params,
+                cashFlowModel,
+                midSpending,
+                currentAge,
+                GuardrailCalculator.SEARCH_ITERATIONS,
+                generatorFactory()
             );
             const results = sim.runSimulation();
             const pos = results.probability_of_success;
@@ -359,59 +272,6 @@ export class GuardrailCalculator {
             if (pos < targetPos) {
                 high = midSpending;
             } else {
-                low = midSpending;
-            }
-        }
-
-        return Math.round(bestSpending / 10) * 10;
-    }
-
-    findSpendingForTargetPos(params, cashFlowModel, adjustmentDirection, currentAge) {
-        const targetPos = this.targetPos;
-        const tolerance = 0.5; // Accept within 0.5% of target
-        const maxIterations = 12; // Binary search depth
-        const searchSimIterations = 1000; // Lower precision for search
-
-        const desiredSpending = params.desired_spending;
-        let low, high;
-
-        if (adjustmentDirection === 'decrease') {
-            low = 0;
-            high = desiredSpending;
-        } else {
-            low = desiredSpending;
-            // Cap drastic increases at reasonable 20% withdrawal rate or just double spending
-            high = Math.max(desiredSpending * 2, params.current_portfolio_value / 5);
-        }
-
-        let bestSpending = desiredSpending;
-        let closestPosDiff = 100.0;
-
-        for (let i = 0; i < maxIterations; i++) {
-            let midSpending = (low + high) / 2;
-
-            // Should not go below 0
-            if (midSpending < 0) midSpending = 0;
-
-            const sim = this.createSimulation(params, cashFlowModel, midSpending, currentAge, searchSimIterations);
-            const results = sim.runSimulation();
-            const pos = results.probability_of_success;
-
-            const diff = Math.abs(pos - targetPos);
-            if (diff < closestPosDiff) {
-                closestPosDiff = diff;
-                bestSpending = midSpending;
-            }
-
-            if (diff <= tolerance) {
-                break;
-            }
-
-            if (pos < targetPos) {
-                // Spending too high, need to decrease
-                high = midSpending;
-            } else {
-                // Spending too low (PoS > Target), can increase
                 low = midSpending;
             }
         }
@@ -464,13 +324,6 @@ export class GuardrailCalculator {
         const pos = results.probability_of_success;
         const status = results.guardrail_status;
 
-        const formatCurrency = (amount) => {
-            return '$' + Number(amount).toLocaleString('en-US', {
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 0
-            });
-        };
-
         const messages = {
             above_upper: `Your probability of success (${pos}%) is above the upper guardrail (${this.upperGuardrailPos}%). ` +
                          `Your portfolio is performing significantly better than needed. ` +
@@ -500,9 +353,7 @@ export class GuardrailCalculator {
 
     createSpendingProfile(params) {
         const profileType = params.spending_profile_type ?? 'smile';
-        const customMultipliers = params.custom_spending_multipliers ?? {};
-
-        return new SpendingProfile(profileType, customMultipliers);
+        return new SpendingProfile(profileType);
     }
 
     getAdjustedIncomeAges(source, params) {
@@ -532,55 +383,19 @@ export class GuardrailCalculator {
     }
 
     validateParams(params) {
-        const required = [
-            'retirement_age',
-            'planning_horizon_years',
-            'current_portfolio_value',
-            'desired_spending',
-            'stock_allocation',
-            'bond_allocation',
-            'cash_allocation',
-        ];
+        const errors = validateInput(params);
+        const criticalErrors = errors.filter(error => error.message.startsWith('Missing required field'));
 
-        for (const field of required) {
-            if (params[field] === undefined || params[field] === null || params[field] === '') {
-                throw new Error(`Missing required parameter: ${field}`);
+        if (criticalErrors.length > 0) {
+            throw new Error(criticalErrors[0].message);
+        }
+
+        for (const error of errors) {
+            if (!error.message.startsWith('Missing required field')) {
+                console.warn(error.message);
             }
         }
 
-        // Require either current_age OR spouse1_age
-        if (params.current_age === undefined && params.spouse1_age === undefined) {
-            throw new Error("Missing required parameter: current_age or spouse1_age");
-        }
-
-        // Use spouse1_age if available, fallback to current_age for backward compatibility
-        const currentAge = params.spouse1_age ?? params.current_age;
-
-        // Validate age parameters
-        if (currentAge < params.retirement_age) {
-            console.warn("Current age must be greater than or equal to age at retirement");
-        }
-
-        if (params.planning_horizon_years < 1 || params.planning_horizon_years > 60) {
-            console.warn("Planning horizon must be between 1 and 60 years");
-        }
-
-        // Validate portfolio values
-        if (params.current_portfolio_value <= 0) {
-            console.warn("Current portfolio value must be positive");
-        }
-
-        if (params.desired_spending < 0) {
-            console.warn("Desired spending cannot be negative");
-        }
-
-        // Validate allocations
-        const totalAllocation = parseFloat(params.stock_allocation) + parseFloat(params.bond_allocation) + parseFloat(params.cash_allocation);
-        if (Math.abs(totalAllocation - 100) > 0.01) {
-            console.warn(`Asset allocations must sum to 100%, got ${totalAllocation}`);
-        }
-
-        // Set defaults for optional parameters
         if (params.annual_fee_percentage === undefined) params.annual_fee_percentage = this.config.defaults.annual_fee;
         if (params.inflation_rate === undefined) params.inflation_rate = this.config.defaults.inflation_rate;
         if (params.monte_carlo_iterations === undefined) params.monte_carlo_iterations = this.config.monte_carlo.default_iterations;

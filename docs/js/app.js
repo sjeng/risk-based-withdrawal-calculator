@@ -115,13 +115,13 @@ function addIncomeSource(savedData = null) {
     sourceDiv.className = 'income-source';
     sourceDiv.dataset.sourceId = incomeSourceCounter;
     
-        const name = savedData?.source_name || '';
+    const name = savedData?.name || savedData?.source_name || '';
     const recipient = savedData?.recipient || 'household';
     const amount = savedData?.annual_amount || '';
     const startAge = savedData?.start_age || '';
     const endAge = savedData?.end_age || '';
     // Convert SQLite integer (0/1) or boolean to proper boolean, defaulting to true
-    const inflationAdjusted = savedData?.is_inflation_adjusted == null ? true : Boolean(savedData.is_inflation_adjusted);
+    const inflationAdjusted = savedData?.inflation_adjusted ?? savedData?.is_inflation_adjusted ?? true;
     
     sourceDiv.innerHTML = `
         <div class="income-source-header">
