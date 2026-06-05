@@ -85,13 +85,14 @@ export class GuardrailCalculator {
 
         if (params.future_expenses && Array.isArray(params.future_expenses)) {
             for (const item of params.future_expenses) {
+                const normalized = this.normalizeExpense(item);
                 cashFlowModel.addExpenseItem(
-                    item.name,
-                    parseFloat(item.annual_amount),
-                    parseInt(item.start_age),
-                    item.end_age != null ? parseInt(item.end_age) : null,
-                    item.inflation_adjusted ?? true,
-                    item.one_time ?? false
+                    normalized.name,
+                    normalized.annual_amount,
+                    normalized.start_age,
+                    normalized.end_age,
+                    normalized.inflation_adjusted,
+                    normalized.one_time
                 );
             }
         }
@@ -354,6 +355,65 @@ export class GuardrailCalculator {
     createSpendingProfile(params) {
         const profileType = params.spending_profile_type ?? 'smile';
         return new SpendingProfile(profileType);
+    }
+
+    /**
+     * Normalize a raw future-expense object into the fields the CashFlowModel
+     * consumes (end_age, one_time, inflation_adjusted).
+     *
+     * The web form pre-computes `end_age` and `one_time` before calling the
+     * engine, but the CLI / programmatic callers pass raw input following the
+     * documented schema (`type`, `duration_years`). This derives the consumed
+     * fields so both paths behave identically:
+     *
+     *   - end_age: explicit `end_age` wins; otherwise derived from
+     *     start_age + duration_years - 1 when duration_years > 0; else null.
+     *   - one_time: explicit boolean wins; otherwise derived from `type`
+     *     ("one_time" -> true, "duration" -> false). With no type, an expense
+     *     bounded by end_age/duration is recurring; an unbounded one defaults
+     *     to a single charge (schema default type = "one_time").
+     *   - inflation_adjusted: defaults to false (matches the schema and web
+     *     form). Previously defaulted to true, silently inflating expenses.
+     *
+     * @param {object} item Raw expense input
+     * @returns {{name:string, annual_amount:number, start_age:number, end_age:(number|null), inflation_adjusted:boolean, one_time:boolean}}
+     */
+    normalizeExpense(item) {
+        const startAge = parseInt(item.start_age);
+        const durationYears = item.duration_years != null ? parseInt(item.duration_years) : null;
+
+        let endAge;
+        if (item.end_age != null && item.end_age !== '') {
+            endAge = parseInt(item.end_age);
+        } else if (durationYears != null && durationYears > 0) {
+            endAge = startAge + durationYears - 1;
+        } else {
+            endAge = null;
+        }
+
+        let oneTime;
+        if (typeof item.one_time === 'boolean') {
+            oneTime = item.one_time;
+        } else if (item.type === 'one_time') {
+            oneTime = true;
+        } else if (item.type === 'duration') {
+            oneTime = false;
+        } else if (endAge != null) {
+            // No type, but bounded by an end age (or derived duration): recurring.
+            oneTime = false;
+        } else {
+            // No type and unbounded: schema default type is "one_time".
+            oneTime = true;
+        }
+
+        return {
+            name: item.name,
+            annual_amount: parseFloat(item.annual_amount),
+            start_age: startAge,
+            end_age: endAge,
+            inflation_adjusted: item.inflation_adjusted ?? false,
+            one_time: oneTime,
+        };
     }
 
     getAdjustedIncomeAges(source, params) {

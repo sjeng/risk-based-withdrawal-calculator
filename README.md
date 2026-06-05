@@ -155,7 +155,7 @@ For a detailed technical discussion, see [METHODOLOGY.md](METHODOLOGY.md).
 
 ```
 risk-based-guardrail/
-├── cli/                     # Node 24 CLI (see CLI Usage below)
+├── cli/                     # Node 22+ CLI (see CLI Usage below)
 │   ├── guardrail.js          # CLI entry point
 │   ├── validate.js           # Input validation
 │   ├── package.json          # ESM config, no runtime deps
@@ -175,7 +175,7 @@ risk-based-guardrail/
 
 ## CLI Usage
 
-The CLI runs the same calculation engine as the browser app under Node.js >= 24, with zero npm dependencies.
+The CLI runs the same calculation engine as the browser app under Node.js >= 22, with zero npm dependencies.
 
 ### Quick Start
 

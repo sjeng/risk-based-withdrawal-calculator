@@ -184,14 +184,17 @@ export class MonteCarloSimulation {
         const finalValues = this.simulationResults.map(result => result.final_portfolio_value);
         finalValues.sort((a, b) => a - b);
 
+        // finalValues is sorted ascending, so the endpoints are min/max.
+        // Avoid Math.min/max(...spread), which can throw RangeError
+        // ("Maximum call stack size exceeded") for large iteration counts.
         return {
             p10: this.getPercentile(finalValues, 10),
             p25: this.getPercentile(finalValues, 25),
             p50: this.getPercentile(finalValues, 50), // Median
             p75: this.getPercentile(finalValues, 75),
             p90: this.getPercentile(finalValues, 90),
-            min: Math.min(...finalValues),
-            max: Math.max(...finalValues),
+            min: finalValues.length ? finalValues[0] : 0,
+            max: finalValues.length ? finalValues[finalValues.length - 1] : 0,
         };
     }
 

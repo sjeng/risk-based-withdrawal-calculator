@@ -7,7 +7,7 @@
     "guardrail": "./guardrail.js"
   },
   "engines": {
-    "node": ">=24"
+    "node": ">=22"
   },
   "scripts": {
     "start": "node guardrail.js"
