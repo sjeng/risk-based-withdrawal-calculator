@@ -1,7 +1,7 @@
 // Regenerate test/fixtures/schedules.json from the shipped input files.
 // Run only when a change to cash-flow / expense behavior is intentional:
 //   node scripts/regen-schedules.mjs
-import { readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -10,6 +10,9 @@ import { GuardrailCalculator } from '../docs/js/logic/GuardrailCalculator.js';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 function walk(d) {
+    // The stress-tests corpus is optional / may not be present in every
+    // checkout. Tolerate a missing directory instead of throwing ENOENT.
+    if (!existsSync(d)) return [];
     let out = [];
     for (const f of readdirSync(d)) {
         const p = join(d, f);

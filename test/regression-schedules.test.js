@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -17,10 +17,17 @@ const root = join(__dirname, '..');
  * pinned exactly. This guards against unintended changes to the cash-flow,
  * spending-smile, income-offset, or expense-normalization logic.
  *
+ * Coverage is whatever input files are present: cli/example-input.json plus
+ * any JSON dropped into an (optional) stress-tests/ directory. Adding inputs
+ * there automatically extends coverage on the next `node scripts/regen-schedules.mjs`.
+ *
  * The committed fixture reflects the CORRECTED expense behavior. Regenerate
  * with `node scripts/regen-schedules.mjs` only when a change is intentional.
  */
 function walk(d) {
+    // The stress-tests corpus is optional / may not be present in every
+    // checkout. Tolerate a missing directory instead of throwing ENOENT.
+    if (!existsSync(d)) return [];
     let out = [];
     for (const f of readdirSync(d)) {
         const p = join(d, f);
